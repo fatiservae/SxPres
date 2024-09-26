@@ -6,7 +6,8 @@ fn main() {
 
     let teste = vec![linha1, linha2];
 
+    let slide1 = lib::Slide::new(); 
     // input -> process(input) -> printa
     // let apresentacao: Presentation = teste.process();
-    println!("{}", lib::Presentation::new()); 
+    println!("{}", lib::Presentation::build(None, vec![slide1], None, None)); 
 }

@@ -1,8 +1,8 @@
 use std::fmt;
 
-struct Custom {}
+pub struct Custom {}
 
-struct Notas {}
+pub struct Notas {}
 
 impl fmt::Display for Custom {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -24,9 +24,18 @@ impl fmt::Display for Notas {
     }
 }
 
-struct Panview {
+pub struct Panview {
     view: String,
     code: String 
+}
+
+impl Panview {
+    pub fn default_panview() -> Panview {
+        Panview {
+            view: "HTML PANVIEW".to_string(), 
+            code: "PANVIEW JS CODE".to_string()
+        }
+    }
 }
 
 pub struct Presentation {
@@ -38,15 +47,19 @@ pub struct Presentation {
 
 impl fmt::Display for Presentation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let conteudo = for slide in &self.slides {
-            write!(f, "{}", slide)?
-        };
+        let mut saida = String::new();
 
-        Ok(())
+        // não consegui idiomático
+        for slide in &self.slides {
+            saida.push_str(&slide.head);
+            saida.push_str(&slide.body);
+            saida.push_str(&slide.foot);
+        };
+        write!(f, "{}", saida) 
     }
 }
 
-struct Slide {
+pub struct Slide {
     number: i32,
     head: &'static str,
     body: String,
@@ -54,15 +67,17 @@ struct Slide {
 }
 
 impl Slide {
-    fn new() -> Slide {
-        let slide: Slide = Slide {
+    fn flat(self) -> String {
+        format!("{}{}{}", self.head, self.body, self.foot)
+    }
+
+    pub fn new() -> Slide {
+        Slide {
             number: 1,
             head: "<div class=slide></div>",
             body: String::from("Body"),
             foot: String::from("Foot")
-        };
-
-    slide
+        }
     }
 }
 
@@ -77,8 +92,45 @@ impl fmt::Display for Slide {
 }
 
 impl Presentation {
-    fn build (slides: Vec<Slide>, notas: Option<Vec<Notas>>, custom: Option<Custom>) -> Presentation {
-        Presentation::new() //por enquanto
+    pub fn build (pan: Option<Panview>, slides: Vec<Slide>, notas: Option<Vec<Notas>>, custom: Option<Custom>) -> String {
+        //let mut presentation = Presentation::new() //por enquanto
+        //
+        //
+        let mut header: String = "<head></head>".to_string(); // aquiri LANG, UTF-8 etc
+        let mut code: String = "<script></script>".to_string();
+        
+        let mut body: String = String::new();
+        let mut panview_html: String = String::new();
+        let mut panview_code: String = String::new();
+
+        body.push_str("<body><div class=panview>");
+        match pan {
+            Some(pan) => {
+                panview_html = pan.view;
+                panview_code = pan.code;
+            },
+            None => {
+                let def_panview = Panview::default_panview();
+                panview_html = def_panview.view;
+                panview_code = def_panview.code;
+            }
+        };
+
+        body.push_str(&panview_html);
+        body.push_str("</div>"); // fecha para Panview
+        body.push_str(&format!("<script>{}</script>", &panview_code));
+
+
+        //
+        for slide in slides {
+            body.push_str("<div class=slide>");
+            body.push_str(&slide.body);
+            body.push_str("</slide>");
+        }
+
+        body.push_str("</body>");
+
+        format!("{}{}{}", header, body, code)
     }
 
     pub fn new() -> Presentation {
