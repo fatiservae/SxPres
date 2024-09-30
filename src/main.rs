@@ -1,13 +1,19 @@
-mod lib;
+use sxpres::*;
 
 fn main() {
-    let linha1 = String::from("---\n.list\n1. Primeiro\n2. Segundo\n3.Terceiro\n");
-    let linha2 = String::from("---\n.list\n1. Primeiro\n2. Segundo\n3.Terceiro\n");
+    let input = vec!["---".to_string(), ".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(),".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(), "---".to_string(), ".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string()]; // idealy, a Slide Type
 
-    let teste = vec![linha1, linha2];
+    //let pres: Result<Presentation, SimplexError> = simplex_parser(slide);
 
-    let slide1 = lib::Slide::new(); 
-    // input -> process(input) -> printa
-    // let apresentacao: Presentation = teste.process();
-    println!("{}", lib::Presentation::build(None, vec![slide1], None, None)); 
+    //match pres{
+    //    Ok(presentation) => println!("{}", presentation),
+    //    _ => todo!()
+    //}
+
+    let presentation = simplex_parser(input);
+
+    match presentation {
+        Ok(press) => println!("{}", press),
+        _ => todo!()
+    }
 }

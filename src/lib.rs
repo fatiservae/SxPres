@@ -1,159 +1,259 @@
+#![allow(unused)]
 use std::fmt;
 
+const DUMMY_LIST1 : &str = "This is a dummy list item to Simplex Presentation.";
+const DUMMY_LIST2: &str = "This is another dummy list item to Simplex Presentation.";
+const DUMMY_FOOT: &str = "This is a dummy foot to Simplex Presentation.";
+const DUMMY_PANVIEW_HTML: &str = "This is a dummy of panview HTML to Simplex Presentation.";
+const DUMMY_PANVIEW_CODE: &str = "This is a dummy of panview Code to Simplex Presentation.";
+const SEPARATOR: &str = "---";
+const TAG_MARKER: &str = ".";
+const TAG_LIST: &str = "list";
+
+/// Organized options for customizations.
 pub struct Custom {}
-
-pub struct Notas {}
-
 impl fmt::Display for Custom {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
         write!(f, "Custom")
     }
 }
 
-impl fmt::Display for Notas {
+/// Notes or drafts to be shown to host.
+pub struct Notes {}
+impl fmt::Display for Notes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
-        write!(f, "Notas")
+        write!(f, "Notes")
     }
 }
 
+/// Build a fully browseable view of the presentation.
 pub struct Panview {
-    view: String,
+    html: String,
     code: String 
 }
-
 impl Panview {
     pub fn default_panview() -> Panview {
         Panview {
-            view: "HTML PANVIEW".to_string(), 
+            html: "HTML PANVIEW".to_string(), 
             code: "PANVIEW JS CODE".to_string()
         }
     }
 }
 
+enum ElementNature {
+    Text,
+    List,
+    OrdList,
+    Mermaid,
+    Video,
+    Image
+}
+
+pub struct Element {
+    nature: ElementNature,
+    content: String,
+    number: usize 
+}
+
+/// Each fully presentable slide from the entire slideshow.
+pub struct Slide {
+    number: i32,
+    body: Vec<Element>,
+    draft: bool
+}
+impl Slide {
+    fn flat(self) -> String {
+    let mut content = String::new();
+        for element in self.body {
+            content.push_str(&format!("{}", element.content));
+        }
+    content
+    }
+
+    pub fn new() -> Slide { 
+        Slide {
+            number: 1,
+            body: vec![Element {
+                nature: ElementNature::Text,
+                content: format!("<ul><li>{}</li><li>{}</li></ul>", DUMMY_LIST1, DUMMY_LIST2),
+                number: 0
+            }],
+            draft: true
+        }
+    }
+}
+impl fmt::Display for Slide {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut out = String::new();
+        for element in &self.body {
+            out.push_str(&element.content);
+        }
+        write!(f, "{}", out)
+    }
+}
+
+/// The slideshow entity.
 pub struct Presentation {
     slides: Vec<Slide>,
     panview: Panview,
-    notas: Option<Vec<Notas>>,
-    custom: Option<Custom>
+    notas: Option<Vec<Notes>>,
+    custom: Option<Custom>,
+    foot: String,
 }
-
-impl fmt::Display for Presentation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut saida = String::new();
-
-        // não consegui idiomático
-        for slide in &self.slides {
-            saida.push_str(&slide.head);
-            saida.push_str(&slide.body);
-            saida.push_str(&slide.foot);
-        };
-        write!(f, "{}", saida) 
-    }
-}
-
-pub struct Slide {
-    number: i32,
-    head: &'static str,
-    body: String,
-    foot: String
-}
-
-impl Slide {
-    fn flat(self) -> String {
-        format!("{}{}{}", self.head, self.body, self.foot)
-    }
-
-    pub fn new() -> Slide {
-        Slide {
-            number: 1,
-            head: "<div class=slide></div>",
-            body: String::from("Body"),
-            foot: String::from("Foot")
-        }
-    }
-}
-
-impl fmt::Display for Slide {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
-        write!(f, "{}{}{}", self.head, self.body, self.foot)
-    }
-}
-
 impl Presentation {
-    pub fn build (pan: Option<Panview>, slides: Vec<Slide>, notas: Option<Vec<Notas>>, custom: Option<Custom>) -> String {
-        //let mut presentation = Presentation::new() //por enquanto
-        //
-        //
-        let mut header: String = "<head></head>".to_string(); // aquiri LANG, UTF-8 etc
+    /// Dilute into simplex_parser()
+    /// Make a Presentation by receiving all the ingredients.
+    pub fn build (panview: Panview, slides: Vec<Slide>, notas: Option<Vec<Notes>>, custom: Option<Custom>) -> Result<Presentation> {
+        // HEADER
+        let mut header: String = "<head></head>".to_string(); // aquirir LANG, UTF-8 etc
         let mut code: String = "<script></script>".to_string();
-        
-        let mut body: String = String::new();
-        let mut panview_html: String = String::new();
-        let mut panview_code: String = String::new();
+        let mut body = String::new();
 
-        body.push_str("<body><div class=panview>");
-        match pan {
-            Some(pan) => {
-                panview_html = pan.view;
-                panview_code = pan.code;
-            },
-            None => {
-                let def_panview = Panview::default_panview();
-                panview_html = def_panview.view;
-                panview_code = def_panview.code;
-            }
-        };
+        // PANVIEW
+        let mut panview: String = format!("<body><div class=panview>{}</div><script>{}</script>", panview.html, panview.code);
 
-        body.push_str(&panview_html);
-        body.push_str("</div>"); // fecha para Panview
-        body.push_str(&format!("<script>{}</script>", &panview_code));
+        // SLIDES
+        //for slide in slides {
+        //    body.push_str(&format!("<div class=slide>{}</div><div class=slidefoot>{}</div>", &slide.body, &slide.foot));
+        //}
 
-
-        //
-        for slide in slides {
-            body.push_str("<div class=slide>");
-            body.push_str(&slide.body);
-            body.push_str("</slide>");
-        }
-
+        // END BODY
         body.push_str("</body>");
 
-        format!("{}{}{}", header, body, code)
+        format!("{}{}{}", header, body, code);
+
+        // FOR A WHILE
+        Ok(Presentation::new())
+
+        // DEFINITIVE
     }
 
+    /// Spawn a dummy Presentation.
     pub fn new() -> Presentation {
         Presentation {
-            panview: Panview {view: String::from(""), code: String::from("<script>JS CODE</script>") }, 
+            panview: Panview {
+                html: format!("<div class=panview>{}</div>", DUMMY_PANVIEW_HTML),
+                code: format!("<script>{}</script>", DUMMY_PANVIEW_CODE)
+            },
             slides: vec![Slide::new()],
             notas: None,
-            custom: None 
+            custom: None,
+            foot: DUMMY_FOOT.to_string()
         }
     }
 }
+impl fmt::Display for Presentation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut out = String::new();
 
-enum TipoErro {
-    tipo1,
-    tipo2
+        // TODO: criar regex para output com quebras no HTML
+        //       make a regex for beaultiful output
+        for slide in &self.slides {
+            let elements : Vec<&Element>= slide.body.iter().collect();
+            for element in elements {
+                out.push_str(&format!("{}", element.content));
+            };
+        }
+        //self.slides.iter().map(|slide| out.push_str(&format!("{}", slide.body.iter().map(|element| format!("{}", element)))));
+
+        write!(f, "{}", out) 
+    }
 }
 
-struct Erro {
-    tipo: TipoErro,
+pub type Result<T> = std::result::Result<T, SimplexError>;
+
+/// The miriad of errors in Simplex Presentation.
+enum ErrorNature {
+    /// When a Slide is built but error occurs.
+    BrokenSlide,
+    FaultyLine,
+    BrokenFoot,
+    BrokenBody,
+    NoCode,
+    EmptyTag
+}
+/// The default error behavior of Simplex Presentation needs a nature of error, a message associated
+/// and a location for debugging.
+pub struct SimplexError {
+    nature: ErrorNature,
     msg: String,
-    loc: i32 
+    loc: i32  // number line for now
 }
 
-pub fn process(input: Vec<String>) -> Result<Presentation, Erro>{
-    Ok(Presentation::new())
+struct RawSlide {
+    elements: Vec<String>,
+    number: i32
+}
+
+/// This trait is born because split methods of primitive str 
+/// doesn't works
+trait SplitOnDot {
+    fn split_on_dot(self) -> Vec<Vec<String>>;
+}
+
+impl SplitOnDot for Vec<String> {
+    fn split_on_dot(self) -> Vec<Vec<String>> {
+        let mut result = Vec::new();
+        let mut temp_group = Vec::new();
+    
+        for s in self {
+            if s.starts_with(".") {
+                if !temp_group.is_empty() {
+                    result.push(temp_group);
+                }
+                temp_group = Vec::new();
+            }
+            temp_group.push(s);
+        }
+    
+        // Adiciona o último grupo
+        if !temp_group.is_empty() {
+            result.push(temp_group);
+        }
+    
+    result
+    }
+}
+
+fn list (element: &String, i: usize) -> Element {
+    Element {
+        nature: ElementNature::List,
+        content: format!("<div>{}</div>", element),
+        number: i
+    }
+}
+
+/// The main parser, reads a `Vec<String>` --- mainly from a file input or stdin --- and
+/// outputs a Presentations is everything is fine. Also works as a wraper around
+/// Presentaton::build.
+pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
+    let tag_list = format!("{}{}", TAG_MARKER, TAG_LIST);
+    let mut presentation = Presentation::new();
+    let another_slide: Slide = Slide::new(); 
+
+    presentation.slides.push(another_slide); // just so to presentation to have 2 slides
+
+    let mut raw_slides: Vec<Vec<String>> = input.split(|raw_slide| raw_slide.starts_with(SEPARATOR))
+        .filter(|line| !line.is_empty())
+        .map(|slide| slide.to_vec())
+        .collect::<Vec<Vec<String>>>();
+    println!("{:?}\n\n", raw_slides);
+    
+    for (i, slide) in raw_slides.into_iter().enumerate() {
+        let elements = slide.split_on_dot();
+        println!("\nSlide no. {}", i);
+
+        for (j, element) in elements.into_iter().enumerate() {
+            print!("Element no {}\n", j);
+            print!("{:?}\n", element);
+
+            match &element[j] {
+                // j sync is an ok procedure?
+                tag_list => presentation.slides[i].body.push(list(&element[j], j)),
+                _ => todo!()
+            }
+        }
+    };
+
+    Ok(presentation)
 }
