@@ -57,7 +57,7 @@ pub struct Element {
 
 /// Each fully presentable slide from the entire slideshow.
 pub struct Slide {
-    number: i32,
+    number: usize,
     body: Vec<Element>,
     draft: bool
 }
@@ -88,12 +88,16 @@ impl fmt::Display for Slide {
         for element in &self.body {
             out.push_str(&element.content);
         }
-        write!(f, "{}", out)
+        match self.draft {
+            false => write!(f, "<div class=slide>{}</div>", out),
+            true => write!(f, "<!-- a draft slide -->\n<div class=slide></div>")
+        }
     }
 }
 
 /// The slideshow entity.
 pub struct Presentation {
+    head: String,
     slides: Vec<Slide>,
     panview: Panview,
     notas: Option<Vec<Notes>>,
@@ -131,32 +135,39 @@ impl Presentation {
     /// Spawn a dummy Presentation.
     pub fn new() -> Presentation {
         Presentation {
+            head: "<head></head>".to_string(),
             panview: Panview {
                 html: format!("<div class=panview>{}</div>", DUMMY_PANVIEW_HTML),
                 code: format!("<script>{}</script>", DUMMY_PANVIEW_CODE)
             },
-            slides: vec![Slide::new()],
+            slides: vec![],
             notas: None,
             custom: None,
             foot: DUMMY_FOOT.to_string()
         }
     }
+
 }
 impl fmt::Display for Presentation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut out = String::new();
+        let mut out = String::from("<html>");
+        let head = &self.head;
+        //out = out + head;
 
-        // TODO: criar regex para output com quebras no HTML
-        //       make a regex for beaultiful output
-        for slide in &self.slides {
-            let elements : Vec<&Element>= slide.body.iter().collect();
-            for element in elements {
-                out.push_str(&format!("{}", element.content));
-            };
-        }
+        //// TODO: criar regex para output com quebras no HTML
+        ////       make a regex for beaultiful output
+        //for slide in &self.slides {
+        //    let elements : Vec<&Element>= slide.body.iter().collect();
+        //    for element in elements {
+        //        out.push_str(&format!("{}", element.content));
+        //    };
+        //}
         //self.slides.iter().map(|slide| out.push_str(&format!("{}", slide.body.iter().map(|element| format!("{}", element)))));
-
-        write!(f, "{}", out) 
+        //out = out + "</html>";
+        for slide in &self.slides {
+            write!(f, "<html>{}{}</html>", head, slide)?
+        }
+        Ok(())
     }
 }
 
@@ -167,6 +178,7 @@ enum ErrorNature {
     /// When a Slide is built but error occurs.
     BrokenSlide,
     FaultyLine,
+    FaultyTag,
     BrokenFoot,
     BrokenBody,
     NoCode,
@@ -179,6 +191,11 @@ pub struct SimplexError {
     msg: String,
     loc: i32  // number line for now
 }
+impl fmt::Display for SimplexError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
 
 struct RawSlide {
     elements: Vec<String>,
@@ -187,12 +204,12 @@ struct RawSlide {
 
 /// This trait is born because split methods of primitive str 
 /// doesn't works
-trait SplitOnDot {
-    fn split_on_dot(self) -> Vec<Vec<String>>;
+trait SplitOnTag {
+    fn split_on_tag(self) -> Vec<Vec<String>>;
 }
 
-impl SplitOnDot for Vec<String> {
-    fn split_on_dot(self) -> Vec<Vec<String>> {
+impl SplitOnTag for Vec<String> {
+    fn split_on_tag(self) -> Vec<Vec<String>> {
         let mut result = Vec::new();
         let mut temp_group = Vec::new();
     
@@ -223,37 +240,67 @@ fn list (element: &String, i: usize) -> Element {
     }
 }
 
+/// Generate an `<ul>` style listing.
+fn ulist (raw_element: Vec<String>) -> Result<String> {
+    if !(raw_element[0] == ".list") {
+        return Err(SimplexError {
+            loc: 0, // fix
+            msg: "Tried to parse a .list tag, but ulist() receives a different one".to_string(),
+            nature: ErrorNature::FaultyTag
+        })
+    };
+    let mut content = "<ul>".to_string();
+    for raw_line in &raw_element[1..] {
+        content = content + &format!("<li>{}</li>", raw_line);
+    };
+    Ok(content + "</ul>")
+}
+
 /// The main parser, reads a `Vec<String>` --- mainly from a file input or stdin --- and
 /// outputs a Presentations is everything is fine. Also works as a wraper around
 /// Presentaton::build.
 pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
     let tag_list = format!("{}{}", TAG_MARKER, TAG_LIST);
-    let mut presentation = Presentation::new();
-    let another_slide: Slide = Slide::new(); 
+    let mut presentation: Presentation = Presentation::new();
+    //let another_slide: Slide = Slide::new(); 
 
-    presentation.slides.push(another_slide); // just so to presentation to have 2 slides
+    //presentation.slides.push(another_slide); // just so to presentation to have 2 slides
 
     let mut raw_slides: Vec<Vec<String>> = input.split(|raw_slide| raw_slide.starts_with(SEPARATOR))
         .filter(|line| !line.is_empty())
+        //.filter(|line| line.is_comment()) // TODO
         .map(|slide| slide.to_vec())
         .collect::<Vec<Vec<String>>>();
-    println!("{:?}\n\n", raw_slides);
+    //println!("{:?}\n\n", raw_slides);
     
-    for (i, slide) in raw_slides.into_iter().enumerate() {
-        let elements = slide.split_on_dot();
-        println!("\nSlide no. {}", i);
+    let mut slides: Vec<Slide> = vec![];
+    for (i, raw_slide) in raw_slides.into_iter().enumerate() {
+        //println!("\nSlide no. {}", i);   
 
-        for (j, element) in elements.into_iter().enumerate() {
-            print!("Element no {}\n", j);
-            print!("{:?}\n", element);
+        let mut elements: Vec<Element> = vec![];
+        for (j, raw_element) in raw_slide.split_on_tag().into_iter().enumerate() {
+            // excluir a linha da tag
+            // chamar a funcao da tag que devolve um Element
+            // empurrar o Element no fim, apos o loop for
+            
+            //print!("Element no {}\n", j);
+            //print!("{:?}\n", element);
+            //
 
-            match &element[j] {
-                // j sync is an ok procedure?
-                tag_list => presentation.slides[i].body.push(list(&element[j], j)),
-                _ => todo!()
-            }
+            let element = Element {
+                nature: match &raw_element[0] {
+                    tag_list => ElementNature::List,
+                    _ => todo!()
+                }, 
+                number: j, 
+                content: ulist(raw_element)?
+            };
+            elements.push(element);
         }
-    };
 
+        slides.push(Slide {body: elements, draft: false, number: i});
+        //slides.push(raw_slide); 
+    };
+    presentation.slides = slides;
     Ok(presentation)
 }
