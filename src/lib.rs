@@ -27,6 +27,8 @@ impl fmt::Display for Notes {
 }
 
 /// Build a fully browseable view of the presentation.
+// Consider just a title or numbering for a first implementation
+// later, consider thumbnails
 pub struct Panview {
     html: String,
     code: String 
