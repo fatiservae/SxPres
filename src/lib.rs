@@ -8,7 +8,8 @@ const DUMMY_PANVIEW_HTML: &str = "This is a dummy of panview HTML to Simplex Pre
 const DUMMY_PANVIEW_CODE: &str = "This is a dummy of panview Code to Simplex Presentation.";
 const SEPARATOR: &str = "---";
 const TAG_MARKER: &str = ".";
-const TAG_LIST: &str = "list";
+const TAG_ULIST: &str = "list";
+const TAG_OLIST: &str = "ordlist";
 
 /// Organized options for customizations.
 pub struct Custom {}
@@ -43,6 +44,7 @@ impl Panview {
 }
 
 enum ElementNature {
+    Unknow,
     Text,
     List,
     OrdList,
@@ -195,7 +197,11 @@ pub struct SimplexError {
 }
 impl fmt::Display for SimplexError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.msg)
+        let error_nature = match self.nature {
+            ErrorNature::FaultyTag => "FaultyTag",
+            _ => todo!()
+        };
+        write!(f, "Error nature: {}<br>{} na linha {}", error_nature, self.msg, self.loc)
     }
 }
 
@@ -205,7 +211,7 @@ struct RawSlide {
 }
 
 /// This trait is born because split methods of primitive str 
-/// doesn't works
+/// doesn't work.
 trait SplitOnTag {
     fn split_on_tag(self) -> Vec<Vec<String>>;
 }
@@ -216,7 +222,7 @@ impl SplitOnTag for Vec<String> {
         let mut temp_group = Vec::new();
     
         for s in self {
-            if s.starts_with(".") {
+            if s.starts_with(TAG_MARKER) {
                 if !temp_group.is_empty() {
                     result.push(temp_group);
                 }
@@ -262,7 +268,12 @@ fn ulist (raw_element: Vec<String>) -> Result<String> {
 /// outputs a Presentations is everything is fine. Also works as a wraper around
 /// Presentaton::build.
 pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
-    let tag_list = format!("{}{}", TAG_MARKER, TAG_LIST);
+    let tag_ulist = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_olist = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_video = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_image = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_text = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_mermaid = format!("{}{}", TAG_MARKER, TAG_ULIST);
     let mut presentation: Presentation = Presentation::new();
     //let another_slide: Slide = Slide::new(); 
 
@@ -276,11 +287,11 @@ pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
     //println!("{:?}\n\n", raw_slides);
     
     let mut slides: Vec<Slide> = vec![];
-    for (i, raw_slide) in raw_slides.into_iter().enumerate() {
+    for (raw_slide_no, raw_slide) in raw_slides.into_iter().enumerate() {
         //println!("\nSlide no. {}", i);   
 
         let mut elements: Vec<Element> = vec![];
-        for (j, raw_element) in raw_slide.split_on_tag().into_iter().enumerate() {
+        for (raw_element_no, raw_element) in raw_slide.split_on_tag().into_iter().enumerate() {
             // excluir a linha da tag
             // chamar a funcao da tag que devolve um Element
             // empurrar o Element no fim, apos o loop for
@@ -288,19 +299,55 @@ pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
             //print!("Element no {}\n", j);
             //print!("{:?}\n", element);
             //
+            let element_nature: ElementNature;
+            let element_content: String;
+
+            match &raw_element[0] {
+                tag if *tag == tag_ulist => {
+                    element_nature = ElementNature::List;
+                    element_content = ulist(raw_element)?;
+                },
+                tag if *tag == tag_olist => {
+                    element_nature = ElementNature::OrdList;
+                    element_content = ulist(raw_element)?;
+                },
+                tag if *tag == tag_text => {
+                    element_nature = ElementNature::Text;
+                    element_content = ulist(raw_element)?;
+                }
+                tag if *tag == tag_video => {
+                    element_nature = ElementNature::Video;
+                    element_content = ulist(raw_element)?;
+                },
+                tag if *tag == tag_image => {
+                    element_nature = ElementNature::Image;
+                    element_content = ulist(raw_element)?;
+                },
+                tag if *tag == tag_mermaid => {
+                    element_nature = ElementNature::Mermaid;
+                    element_content = ulist(raw_element)?;
+                },
+                _ => {
+                    let error = SimplexError {
+                        nature: ErrorNature::FaultyTag,
+                        loc: 10,
+                        msg: format!("Tag desconhecida")
+                    };
+                    element_content = String::from(&error.msg);
+                    element_nature = ElementNature::Unknow;
+                    Err(error)?
+                }
+            }; 
 
             let element = Element {
-                nature: match &raw_element[0] {
-                    tag_list => ElementNature::List,
-                    _ => todo!()
-                }, 
-                number: j, 
-                content: ulist(raw_element)?
+                nature: element_nature,
+                number: raw_element_no, 
+                content: element_content 
             };
             elements.push(element);
         }
 
-        slides.push(Slide {body: elements, draft: false, number: i});
+        slides.push(Slide {body: elements, draft: false, number: raw_slide_no});
         //slides.push(raw_slide); 
     };
     presentation.slides = slides;

@@ -1,7 +1,7 @@
 use sxpres::*;
 
 fn main() {
-    let input = vec!["---".to_string(), ".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(),".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(), "---".to_string(), ".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string()]; // idealy, a Slide Type
+    let input = vec!["---".to_string(), ".buff".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(),".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string(), "---".to_string(), ".list".to_string(), "Primeiro da lista".to_string(), "Segundo da lista".to_string()]; // idealy, a Slide Type
 
     //let pres: Result<Presentation, SimplexError> = simplex_parser(slide);
 
@@ -14,6 +14,6 @@ fn main() {
 
     match presentation {
         Ok(press) => println!("{}", press),
-        _ => todo!()
+        Err(err) => println!("{}", err)
     }
 }
