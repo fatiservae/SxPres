@@ -14,6 +14,7 @@ const TAG_TEXT: &str = "text";
 const TAG_MERMAID: &str = "mermaid";
 const TAG_VIDEO: &str = "video";
 const TAG_IMAGE: &str = "image";
+const COMMENT_MARKER: &str = "//";
 
 /// Organized options for customizations.
 pub struct Custom {}
@@ -103,7 +104,25 @@ impl fmt::Display for Slide {
     }
 }
 
-/// The slideshow entity.
+trait IsComment {
+    fn is_comment(self) -> bool;
+}
+
+impl IsComment for String {
+    fn is_comment(self) -> bool {
+        if self.starts_with(COMMENT_MARKER) {true} else {false}
+    }
+}
+
+impl IsComment for &&[String] {
+    fn is_comment(self) -> bool {
+        if self[0] == COMMENT_MARKER {
+            true
+        } else {false}
+    }
+}
+
+/// The slideshow entity itself.
 pub struct Presentation {
     head: String,
     slides: Vec<Slide>,
@@ -113,28 +132,28 @@ pub struct Presentation {
     foot: String,
 }
 impl Presentation {
-    /// Dilute into simplex_parser()
     /// Make a Presentation by receiving all the ingredients.
+    // Deactivated!
     pub fn build (panview: Panview, slides: Vec<Slide>, notas: Option<Vec<Notes>>, custom: Option<Custom>) -> Result<Presentation> {
-        // HEADER
-        let mut header: String = "<head></head>".to_string(); // aquirir LANG, UTF-8 etc
-        let mut code: String = "<script></script>".to_string();
-        let mut body = String::new();
+        //// HEADER
+        //let mut header: String = "<head></head>".to_string(); // aquirir LANG, UTF-8 etc
+        //let mut code: String = "<script></script>".to_string();
+        //let mut body = String::new();
 
-        // PANVIEW
-        let mut panview: String = format!("<body><div class=panview>{}</div><script>{}</script>", panview.html, panview.code);
+        //// PANVIEW
+        //let mut panview: String = format!("<body><div class=panview>{}</div><script>{}</script>", panview.html, panview.code);
 
-        // SLIDES
-        //for slide in slides {
-        //    body.push_str(&format!("<div class=slide>{}</div><div class=slidefoot>{}</div>", &slide.body, &slide.foot));
-        //}
+        //// SLIDES
+        ////for slide in slides {
+        ////    body.push_str(&format!("<div class=slide>{}</div><div class=slidefoot>{}</div>", &slide.body, &slide.foot));
+        ////}
 
-        // END BODY
-        body.push_str("</body>");
+        //// END BODY
+        //body.push_str("</body>");
 
-        format!("{}{}{}", header, body, code);
+        //format!("{}{}{}", header, body, code);
 
-        // FOR A WHILE
+        //// FOR A WHILE
         Ok(Presentation::new())
 
         // DEFINITIVE
@@ -288,6 +307,7 @@ fn ordlist (raw_element: Vec<String>) -> Result<Element> {
     Ok(Element {nature: ElementNature::List, content: content + "</ol>", number: 0}) // fix number
 }
 
+
 /// The main parser, reads a `Vec<String>` --- mainly from a file input or stdin --- and
 /// outputs a Presentations is everything is fine. Also works as a wraper around
 /// Presentaton::build.
@@ -299,13 +319,10 @@ pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
     let tag_text = format!("{}{}", TAG_MARKER, TAG_TEXT);
     let tag_mermaid = format!("{}{}", TAG_MARKER, TAG_MERMAID);
     let mut presentation: Presentation = Presentation::new();
-    //let another_slide: Slide = Slide::new(); 
-
-    //presentation.slides.push(another_slide); // just so to presentation to have 2 slides
 
     let mut raw_slides: Vec<Vec<String>> = input.split(|raw_slide| raw_slide.starts_with(SEPARATOR))
         .filter(|line| !line.is_empty())
-        //.filter(|line| line.is_comment()) // TODO
+        .filter(|line| line.is_comment())
         .map(|slide| slide.to_vec())
         .collect::<Vec<Vec<String>>>();
     //println!("{:?}\n\n", raw_slides);
