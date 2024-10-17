@@ -9,7 +9,11 @@ const DUMMY_PANVIEW_CODE: &str = "This is a dummy of panview Code to Simplex Pre
 const SEPARATOR: &str = "---";
 const TAG_MARKER: &str = ".";
 const TAG_ULIST: &str = "list";
-const TAG_OLIST: &str = "ordlist";
+const TAG_ORDLIST: &str = "ordlist";
+const TAG_TEXT: &str = "text";
+const TAG_MERMAID: &str = "mermaid";
+const TAG_VIDEO: &str = "video";
+const TAG_IMAGE: &str = "image";
 
 /// Organized options for customizations.
 pub struct Custom {}
@@ -248,9 +252,14 @@ fn list (element: &String, i: usize) -> Element {
     }
 }
 
+fn text (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn video (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn image (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn mermaid (raw_element: Vec<String>) -> Result<Element> {todo!()}
+
 /// Generate an `<ul>` style listing.
-fn ulist (raw_element: Vec<String>) -> Result<String> {
-    if !(raw_element[0] == ".list") {
+fn ulist (raw_element: Vec<String>) -> Result<Element> {
+    if !(raw_element[0] == format!("{}{}", TAG_MARKER, TAG_ULIST)) {
         return Err(SimplexError {
             loc: 0, // fix
             msg: "Tried to parse a .list tag, but ulist() receives a different one".to_string(),
@@ -261,19 +270,34 @@ fn ulist (raw_element: Vec<String>) -> Result<String> {
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
     };
-    Ok(content + "</ul>")
+    Ok(Element {nature: ElementNature::List, content: content + "</ul>", number: 0}) // fix number
+}
+/// Generate an `<ul>` style listing.
+fn ordlist (raw_element: Vec<String>) -> Result<Element> {
+    if !(raw_element[0] == format!("{}{}", TAG_MARKER, TAG_ORDLIST)) {
+        return Err(SimplexError {
+            loc: 0, // fix
+            msg: "Tried to parse a .list tag, but ordlist() receives a different one".to_string(),
+            nature: ErrorNature::FaultyTag
+        })
+    };
+    let mut content = "<ol>".to_string();
+    for raw_line in &raw_element[1..] {
+        content = content + &format!("<li>{}</li>", raw_line);
+    };
+    Ok(Element {nature: ElementNature::List, content: content + "</ol>", number: 0}) // fix number
 }
 
 /// The main parser, reads a `Vec<String>` --- mainly from a file input or stdin --- and
 /// outputs a Presentations is everything is fine. Also works as a wraper around
 /// Presentaton::build.
 pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
+    let tag_olist = format!("{}{}", TAG_MARKER, TAG_ORDLIST);
     let tag_ulist = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_olist = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_video = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_image = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_text = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_mermaid = format!("{}{}", TAG_MARKER, TAG_ULIST);
+    let tag_video = format!("{}{}", TAG_MARKER, TAG_VIDEO);
+    let tag_image = format!("{}{}", TAG_MARKER, TAG_IMAGE);
+    let tag_text = format!("{}{}", TAG_MARKER, TAG_TEXT);
+    let tag_mermaid = format!("{}{}", TAG_MARKER, TAG_MERMAID);
     let mut presentation: Presentation = Presentation::new();
     //let another_slide: Slide = Slide::new(); 
 
@@ -292,40 +316,27 @@ pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
 
         let mut elements: Vec<Element> = vec![];
         for (raw_element_no, raw_element) in raw_slide.split_on_tag().into_iter().enumerate() {
-            // excluir a linha da tag
-            // chamar a funcao da tag que devolve um Element
-            // empurrar o Element no fim, apos o loop for
-            
             //print!("Element no {}\n", j);
             //print!("{:?}\n", element);
-            //
-            let element_nature: ElementNature;
-            let element_content: String;
 
-            match &raw_element[0] {
+            elements.push(match &raw_element[0] {
                 tag if *tag == tag_ulist => {
-                    element_nature = ElementNature::List;
-                    element_content = ulist(raw_element)?;
+                    ulist(raw_element)?
                 },
                 tag if *tag == tag_olist => {
-                    element_nature = ElementNature::OrdList;
-                    element_content = ulist(raw_element)?;
+                    ordlist(raw_element)?
                 },
                 tag if *tag == tag_text => {
-                    element_nature = ElementNature::Text;
-                    element_content = ulist(raw_element)?;
+                    text(raw_element)?
                 }
                 tag if *tag == tag_video => {
-                    element_nature = ElementNature::Video;
-                    element_content = ulist(raw_element)?;
+                    video(raw_element)?
                 },
                 tag if *tag == tag_image => {
-                    element_nature = ElementNature::Image;
-                    element_content = ulist(raw_element)?;
+                    image(raw_element)?
                 },
                 tag if *tag == tag_mermaid => {
-                    element_nature = ElementNature::Mermaid;
-                    element_content = ulist(raw_element)?;
+                    mermaid(raw_element)?
                 },
                 _ => {
                     let error = SimplexError {
@@ -333,18 +344,9 @@ pub fn simplex_parser(input: Vec<String>) -> Result<Presentation> {
                         loc: 10,
                         msg: format!("Tag desconhecida")
                     };
-                    element_content = String::from(&error.msg);
-                    element_nature = ElementNature::Unknow;
                     Err(error)?
                 }
-            }; 
-
-            let element = Element {
-                nature: element_nature,
-                number: raw_element_no, 
-                content: element_content 
-            };
-            elements.push(element);
+            }); 
         }
 
         slides.push(Slide {body: elements, draft: false, number: raw_slide_no});
