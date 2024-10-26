@@ -1,4 +1,4 @@
-//#![allow(unused)]
+#![allow(unused)]
 use std::{fmt};
 
 const DUMMY_LIST1 : &str = "This is a dummy list item to Simplex Presentation.";
@@ -28,7 +28,7 @@ enum ElementNature {
 
 /// An slide is built from elements that are rendered to 
 /// a `<div class=element>` that respect the SxPres philosophy.
-pub struct Element {
+struct Element {
     nature: ElementNature,
     content: String,
     number: usize 
@@ -114,6 +114,7 @@ enum ErrorNature {
     FaultyTag,
     /// When a Slide is left empty and for some reason tried to be rendered.
     EmptySlide,
+    FailedFunction,
     //BrokenSlide,
     //FaultyLine,
     //BrokenFoot,
@@ -168,7 +169,6 @@ impl SplitOnTag for Vec<String> {
     }
 }
 
-
 /// The `<p>` rendering function.
 fn text (raw_element: Vec<String>) -> Result<Element> {todo!()}
 
@@ -213,18 +213,16 @@ fn ordlist (raw_element: Vec<String>) -> Result<Element> {
 }
 
 /// The final HTML.
-#[derive(Debug, Clone)]
-pub struct HTML(String);
+pub struct HTML(pub String);
 impl fmt::Display for HTML {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{}", &self.0)
     }
 }
 
 /// The main parser, walks into a `Vec<String>` --- mainly from a file input or stdin --- and
 /// outputs a complete presentation if everything is fine. 
 fn touring_machine(input: Vec<String>) -> Result<Vec<Slide>> {
-
     // has a ordering system to make a side by side if two 
     // elements, a pyramid if three or a grid if four
     // To group and priorytize titles and subtitles
@@ -234,26 +232,33 @@ fn touring_machine(input: Vec<String>) -> Result<Vec<Slide>> {
         .map(|slide| slide.to_vec())
         .collect::<Vec<Vec<String>>>();
 
+    println!("{}", raw_slides.len());
     Ok(build(raw_slides))?
 }
 
 /// Finally condense back a `Vec<Slide>` into `HTML` that is capable of being
 /// printed or outputed.
 fn render(slides: Vec<Slide>) -> Result<HTML> {
-    let mut html: String;
+    let mut html: String = String::new();
     if slides.len() < 1 {
         return Err(SimplexError {
-            msg: "Slide vazio recebido por render()".to_string(),
+            msg: "Empty Vec<Slide> passed to render()".to_string(),
             loc: 0,
             nature: ErrorNature::EmptySlide
         })
     }else{
-        html = String::new();
         for slide in slides {
             html = html + &format!("{}", slide);
         }
     };
     Ok(HTML(html))
+    //} else {
+    //    return Err(SimplexError {
+    //        msg: "The HTML generated was possible empty of String, so render() fails.".to_string(),
+    //        loc: 0,
+    //        nature: ErrorNature::FailedFunction
+    //    })
+    //}
 }
 
 /// Translate raw strings information into structured `Element` and `Slide` data.
@@ -268,7 +273,7 @@ fn build(raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
 
     let mut slides: Vec<Slide> = vec![];
     
-    for (slide_no, raw_slide) in raw_slides.into_iter().enumerate() {
+    for raw_slide in raw_slides {
         let mut elements: Vec<Element> = vec![];
 
         // a fuction has to be called here to return 
@@ -304,7 +309,7 @@ fn build(raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
                 }
             }); 
         };
-        slides.push(Slide {draft: false, number: slide_no, content: Ok(elements), foot: true})
+        slides.push(Slide {draft: false, number: 1, content: Ok(elements), foot: true})
     };
     Ok(slides)
 }
