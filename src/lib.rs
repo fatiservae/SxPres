@@ -1,5 +1,8 @@
 #![allow(unused)]
-use std::{fmt};
+use {
+    std::{fs, fmt, path::Path},
+    base64
+};
 
 const DUMMY_LIST1 : &str = "This is a dummy list item to Simplex Presentation.";
 const DUMMY_LIST2: &str = "This is another dummy list item to Simplex Presentation.";
@@ -169,42 +172,80 @@ impl SplitOnTag for Vec<String> {
     }
 }
 
+pub fn file_base64(file: String, tipo: &str) -> Result<String> {
+    let file_data = fs::read(file.clone())
+                        .expect("Arquivo de mídia não encontrado para converter em base64");
+
+    Ok(format!("data:{}/{};base64,{}", 
+            tipo, 
+            Path::new(&file.clone())
+                .extension()
+                .expect(&format!("Erro ao determinar o tipo de arquivo de: {}", &file))
+                .to_str()
+                .ok_or(&format!("Erro ao converter o caminho de {} para string.", &file))
+                .expect(&format!("Erro ao validar {} como caminho de arquivo", &file)),
+            base64::encode(&file_data)
+    ))
+}
+
+/// Make sure that the tag passed to any tag function corresponds to expectations.
+fn check_tag (tag: &String, reference: &str) -> Result<()> {
+    if !(*tag == format!("{}{}", TAG_MARKER, reference)) {
+        return Err(SimplexError {
+            loc: 0, // fix
+            msg: "Tried to parse {} as a tag, but the correspondent function couldn't resolve it".to_string(),
+            nature: ErrorNature::FaultyTag
+        })
+    } else { Ok(())}
+}
+
 /// The `<p>` rendering function.
-fn text (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn text (raw_element: Vec<String>) -> Result<Element> {
+    check_tag(&raw_element[0], TAG_TEXT);
+    let mut content = "<p>".to_string();
+    for raw_line in &raw_element[1..] {
+        content = content + &format!("<br>{}", raw_line);
+    };
+    Ok(Element {nature: ElementNature::Text, content: content + "</p>", number: 0}) // fix number
+}
 
 /// The `<video>` rendering function.
-fn video (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn video (raw_element: Vec<String>) -> Result<Element> {
+    // Ignores info passed beyond raw_element[1].
+    check_tag(&raw_element[0], TAG_VIDEO)?;
+    let video_path: String = raw_element[1].clone(); // it's ok to clone here, too little
+    let video = file_base64(video_path, "video");
+    let content = format!("<video controls src=\"{}\">", video?);
+    Ok(Element {nature: ElementNature::Video, content: content + "</video>", number: 0}) // fix number
+}
+
 
 /// The `<image>` rendering function.
-fn image (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn image (raw_element: Vec<String>) -> Result<Element> {
+    check_tag(&raw_element[0], TAG_IMAGE)?;
+    let image_path: String = raw_element[1].clone(); // it's ok to clone here, too little
+    let image = file_base64(image_path, "image");
+    let content = format!("<img src=\"{}\">", image?);
+    let captions = format!("<figcaption>{}</figcaption>", raw_element[2..].join("<br>"));
+    Ok(Element {nature: ElementNature::Video, content: content + &captions + "</img>", number: 0}) // fix number
+}
 
 /// The `<div class=mermaid>` rendering function.
 fn mermaid (raw_element: Vec<String>) -> Result<Element> {todo!()}
 
 /// The `<ul>` rendering function.
 fn ulist (raw_element: Vec<String>) -> Result<Element> {
-    if !(raw_element[0] == format!("{}{}", TAG_MARKER, TAG_ULIST)) {
-        return Err(SimplexError {
-            loc: 0, // fix
-            msg: "Tried to parse a .list tag, but ulist() receives a different one".to_string(),
-            nature: ErrorNature::FaultyTag
-        })
-    };
+    check_tag(&raw_element[0], TAG_ULIST)?;
     let mut content = "<ul>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
     };
     Ok(Element {nature: ElementNature::List, content: content + "</ul>", number: 0}) // fix number
 }
+
 /// Generate an `<ol>` style listing.
 fn ordlist (raw_element: Vec<String>) -> Result<Element> {
-    if !(raw_element[0] == format!("{}{}", TAG_MARKER, TAG_ORDLIST)) {
-        return Err(SimplexError {
-            loc: 0, // fix
-            msg: "Tried to parse a .list tag, but ordlist() receives a different one".to_string(),
-            nature: ErrorNature::FaultyTag
-        })
-    };
+    check_tag(&raw_element[0], TAG_ORDLIST)?;
     let mut content = "<ol>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
