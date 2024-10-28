@@ -113,7 +113,9 @@ pub type Result<T> = std::result::Result<T, SimplexError>;
 
 /// The miriad of errors in Simplex Presentation.
 enum ErrorNature {
-    /// When a Slide is built but error occurs.
+    /// A tag is passed to a function but it its not a real tag.
+    UnknownTag,
+    /// When a tag is broke or polluted somehow.
     FaultyTag,
     /// When a Slide is left empty and for some reason tried to be rendered.
     EmptySlide,
@@ -139,7 +141,7 @@ impl fmt::Display for SimplexError {
             ErrorNature::FaultyTag => "FaultyTag",
             _ => todo!()
         };
-        write!(f, "Error nature: {}<br>{} na linha {}", error_nature, self.msg, self.loc)
+        write!(f, "Error nature: {}<br>{} on line {}", error_nature, self.msg, self.loc)
     }
 }
 
@@ -174,16 +176,16 @@ impl SplitOnTag for Vec<String> {
 
 pub fn file_base64(file: String, tipo: &str) -> Result<String> {
     let file_data = fs::read(file.clone())
-                        .expect("Arquivo de mídia não encontrado para converter em base64");
+                        .expect("Media file passed to file_base64() not found.");
 
     Ok(format!("data:{}/{};base64,{}", 
             tipo, 
             Path::new(&file.clone())
                 .extension()
-                .expect(&format!("Erro ao determinar o tipo de arquivo de: {}", &file))
+                .expect(&format!("Error trying to set the filetype of {}", &file))
                 .to_str()
-                .ok_or(&format!("Erro ao converter o caminho de {} para string.", &file))
-                .expect(&format!("Erro ao validar {} como caminho de arquivo", &file)),
+                .ok_or(&format!("Error converting the path {} to string.", &file))
+                .expect(&format!("Error trying validate {} as a file path.", &file)),
             base64::encode(&file_data)
     ))
 }
@@ -342,9 +344,9 @@ fn build(raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
                 },
                 _ => {
                     let error = SimplexError {
-                        nature: ErrorNature::FaultyTag,
+                        nature: ErrorNature::UnknownTag,
                         loc: 10,
-                        msg: format!("Tag desconhecida")
+                        msg: format!("Unknown tag.")
                     };
                     Err(error)?
                 }
