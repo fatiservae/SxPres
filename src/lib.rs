@@ -70,6 +70,7 @@ struct Slide {
 //        }
 //    }
 //}
+
 impl fmt::Display for Slide {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut out = String::new();
@@ -176,7 +177,7 @@ impl SplitOnTag for Vec<String> {
 
 pub fn file_base64(file: String, tipo: &str) -> Result<String> {
     let file_data = fs::read(file.clone())
-                        .expect("Media file passed to file_base64() not found.");
+        .expect("Media file passed to file_base64() not found.");
 
     Ok(format!("data:{}/{};base64,{}", 
             tipo, 
@@ -221,7 +222,6 @@ fn video (raw_element: Vec<String>) -> Result<Element> {
     Ok(Element {nature: ElementNature::Video, content: content + "</video>", number: 0}) // fix number
 }
 
-
 /// The `<image>` rendering function.
 fn image (raw_element: Vec<String>) -> Result<Element> {
     check_tag(&raw_element[0], TAG_IMAGE)?;
@@ -263,25 +263,27 @@ impl fmt::Display for HTML {
     }
 }
 
-/// The main parser, walks into a `Vec<String>` --- mainly from a file input or stdin --- and
-/// outputs a complete presentation if everything is fine. 
-fn touring_machine(input: Vec<String>) -> Result<Vec<Slide>> {
+/// The main parser, walks into a `Vec<String>` --- mainly from a file input 
+/// or stdin --- and outputs a complete presentation if everything is fine. 
+fn touring_machine (input: Vec<String>) -> Result<Vec<Slide>> {
     // has a ordering system to make a side by side if two 
     // elements, a pyramid if three or a grid if four
     // To group and priorytize titles and subtitles
-    let raw_slides: Vec<Vec<String>> = input
+    let mut raw_slides: Vec<Vec<String>> = input
         .split(|raw_slide| raw_slide.starts_with(SEPARATOR))
         .filter(|line| !line.is_empty() || !line.is_comment())
         .map(|slide| slide.to_vec())
         .collect::<Vec<Vec<String>>>();
 
-    println!("{}", raw_slides.len());
+    // Split applied before creates a first Vec<String> empty.
+    raw_slides.remove(0);
+
     Ok(build(raw_slides))?
 }
 
 /// Finally condense back a `Vec<Slide>` into `HTML` that is capable of being
 /// printed or outputed.
-fn render(slides: Vec<Slide>) -> Result<HTML> {
+fn render (slides: Vec<Slide>) -> Result<HTML> {
     let mut html: String = String::new();
     if slides.len() < 1 {
         return Err(SimplexError {
@@ -294,18 +296,11 @@ fn render(slides: Vec<Slide>) -> Result<HTML> {
             html = html + &format!("{}", slide);
         }
     };
-    Ok(HTML(html))
-    //} else {
-    //    return Err(SimplexError {
-    //        msg: "The HTML generated was possible empty of String, so render() fails.".to_string(),
-    //        loc: 0,
-    //        nature: ErrorNature::FailedFunction
-    //    })
-    //}
+    Ok(HTML("<body><div id=\"marcador\"></div> <div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>".to_string() + &html + "</body><script src=\"./script.js\"></script><link rel=\"stylesheet\" href=\"./style.css\">")) 
 }
 
 /// Translate raw strings information into structured `Element` and `Slide` data.
-fn build(raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
+fn build (raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
     // Comparation tags.
     let tag_olist = format!("{}{}", TAG_MARKER, TAG_ORDLIST);
     let tag_ulist = format!("{}{}", TAG_MARKER, TAG_ULIST);
@@ -358,6 +353,6 @@ fn build(raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
 }
 
 // The public exposed API that receives a raw `Vec<String>` and returns an `HTML`.
-pub fn sx_parser(input: Vec<String>) -> Result<HTML> {
+pub fn sx_parser (input: Vec<String>) -> Result<HTML> {
     Ok(render(touring_machine(input)?))?
 }
