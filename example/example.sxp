@@ -1,6 +1,7 @@
 .text
 Um texto a ser processado
 ---
+.draft
 .list
 Uma lista
 Com uma 
