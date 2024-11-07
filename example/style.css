@@ -207,3 +207,9 @@ div.images {
   max-height: 100vh;
   align-items: center;
 }
+
+.nofooter {
+  footer {
+    display: none;
+  }
+}
