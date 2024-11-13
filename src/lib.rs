@@ -1,32 +1,73 @@
-#![allow(unused)]
+//#![allow(unused)]
 use {
-    std::{fs, fmt, path::Path},
-    base64
+    core::panic,
+    std::{fs::File, 
+        fmt,
+        fs,
+        path::{Path, PathBuf}, 
+        io::{self, BufRead}},
+    base64,
+    clap::Parser
 };
 
-const DUMMY_LIST1 : &str = "This is a dummy list item to Simplex Presentation.";
-const DUMMY_LIST2: &str = "This is another dummy list item to Simplex Presentation.";
-//const DUMMY_FOOT: &str = "This is a dummy foot to Simplex Presentation.";
-//const DUMMY_PANVIEW_HTML: &str = "This is a dummy of panview HTML to Simplex Presentation.";
-//const DUMMY_PANVIEW_CODE: &str = "This is a dummy of panview Code to Simplex Presentation.";
 const SEPARATOR: &str = "---";
 const TAG_MARKER: &str = ".";
+const TAG_FOOTER: &str = "footer";
 const TAG_ULIST: &str = "list";
 const TAG_ORDLIST: &str = "ordlist";
 const TAG_TEXT: &str = "text";
 const TAG_MERMAID: &str = "mermaid";
+const TAG_MERMAIDSCRIPT: &str = "mermaidscript";
 const TAG_VIDEO: &str = "video";
 const TAG_IMAGE: &str = "image";
 const COMMENT_MARKER: &str = "//";
+const DRAFT: &str = "draft";
+
+#[derive(Parser)]
+pub struct Cli {
+    #[arg(short, long)]
+    input: PathBuf,
+
+    //#[arg(short, long, action = clap::ArgAction::SetTrue)]
+    //verbose: bool,
+}
+
+pub fn input() -> Result<Vec<String>, fmt::Error> {
+    let args = Cli::parse();
+
+    //if args.verbose {
+    //    println!("Modo verbose ativado!");
+    //}
+
+    if args.input.exists() && args.input.is_file() {
+        let file = match File::open(&args.input) {
+            Ok(file) => file,
+            Err(err) => panic!("Erro ao abrir o arquivo: {}", err),
+        };
+
+        let reader = io::BufReader::new(file);
+        let lines: Result<Vec<String>, io::Error> = reader.lines().collect();
+
+        match lines {
+            Ok(lines) => Ok(lines),
+            Err(err) => {
+                eprintln!("Erro ao ler linhas: {}", err);
+                Err(fmt::Error) 
+            }
+        }
+    } else {
+        panic!("error")
+    }
+}
 
 enum ElementNature {
-    //Unknow,
+    Empty,
     Text,
     List,
     OrdList,
     Mermaid,
     Video,
-    Image
+    //Image
 }
 
 /// An slide is built from elements that are rendered to 
@@ -37,14 +78,25 @@ struct Element {
     number: usize 
 }
 
+impl Element {
+    fn empty() -> Element {
+        Element {
+           content: "".to_string(),
+           nature: ElementNature::Empty,
+           number: 0 // fix
+        }
+    }
+}
+
 /// Each fully presentable slide from the entire slideshow. It is 
 /// a `<div class=slide>` that will be formatted by `css` to fill
 /// the screen and respect the `Javascript` controls.
 struct Slide {
     number: usize, // NEEDED??
-    content: Result<Vec<Element>>,
-    foot: bool, // if carries a foot. Can be disable to remove footing on videos, e.g.
-    draft: bool
+    content: Result<Vec<Element>, fmt::Error>,
+    footer: String, // if carries a foot. Can be disable to remove footing on videos, e.g.
+    draft: bool,
+    mermaid: bool
 }
 //impl Slide {
 //    /// Turns an entire Slide into a printable string.
@@ -72,24 +124,31 @@ struct Slide {
 //}
 
 impl fmt::Display for Slide {
+    #![allow(unused)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut out = String::new();
+        // To handle foot disabling when playing videos, is a best approach
+        // to use JS.
+        //match self.footer {
+        //;
+        
+        let mut before = String::new();
+
+        match self.draft {
+            false => before = "<div class=\"slide\">".to_string(),
+            true => before = "<div class=\"slide, draft-slide\">".to_string(),
+        };
+
+        let mut fill = String::new();
+
         match &self.content {
             Ok(elements) => {
-                elements.iter().for_each(|element| out.push_str(&format!("{}", element.content)));
+                elements.iter().for_each(|element| fill.push_str(&format!("{}", element.content)));
             },
             Err(_) => () 
         };
-        //for elements in &self.content {
-        //    for element in elements {
-        //        out.push_str(&format!("{}", element.content));
-        //    }
-        //};
-        let _ = match self.draft {
-            false => write!(f, "<div class=slide>{}</div>", out),
-            true => write!(f, "<!-- a draft slide -->\n<div class=slide></div>")
-        };
-    Ok(())
+
+        write!(f, "{}{}</div>", before, fill);
+        Ok(())
     }
 }
 
@@ -106,43 +165,6 @@ impl IsComment for String {
 impl IsComment for &&[String] {
     fn is_comment(self) -> bool {
         if (*(*self)).starts_with(&[COMMENT_MARKER.to_string()]) {true} else {false}
-    }
-}
-
-/// Redefine `std::result::Result<T, Err>` to `SimplexError`.
-pub type Result<T> = std::result::Result<T, SimplexError>;
-
-/// The miriad of errors in Simplex Presentation.
-enum ErrorNature {
-    /// A tag is passed to a function but it its not a real tag.
-    UnknownTag,
-    /// When a tag is broke or polluted somehow.
-    FaultyTag,
-    /// When a Slide is left empty and for some reason tried to be rendered.
-    EmptySlide,
-    FailedFunction,
-    //BrokenSlide,
-    //FaultyLine,
-    //BrokenFoot,
-    //BrokenBody,
-    //NoCode,
-    //EmptyTag
-}
-
-/// The default error behavior of Simplex Presentation needs a nature of error, a message associated
-/// and a location for debugging.
-pub struct SimplexError {
-    nature: ErrorNature,
-    msg: String,
-    loc: i32  // number line for now
-}
-impl fmt::Display for SimplexError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let error_nature = match self.nature {
-            ErrorNature::FaultyTag => "FaultyTag",
-            _ => todo!()
-        };
-        write!(f, "Error nature: {}<br>{} on line {}", error_nature, self.msg, self.loc)
     }
 }
 
@@ -167,7 +189,7 @@ impl SplitOnTag for Vec<String> {
             }
             temp_group.push(s);
         }
-        // Adiciona o último grupo
+        // Add last group
         if !temp_group.is_empty() {
             result.push(temp_group);
         }
@@ -175,13 +197,13 @@ impl SplitOnTag for Vec<String> {
     }
 }
 
-pub fn file_base64(file: String, tipo: &str) -> Result<String> {
-    let file_data = fs::read(file.clone())
+pub fn file_base64(file: String, tipo: &str) -> Result<String, fmt::Error> {
+    let file_data = fs::read(&file)
         .expect("Media file passed to file_base64() not found.");
 
     Ok(format!("data:{}/{};base64,{}", 
             tipo, 
-            Path::new(&file.clone())
+            Path::new(&file)
                 .extension()
                 .expect(&format!("Error trying to set the filetype of {}", &file))
                 .to_str()
@@ -191,20 +213,32 @@ pub fn file_base64(file: String, tipo: &str) -> Result<String> {
     ))
 }
 
-/// Make sure that the tag passed to any tag function corresponds to expectations.
-fn check_tag (tag: &String, reference: &str) -> Result<()> {
-    if !(*tag == format!("{}{}", TAG_MARKER, reference)) {
-        return Err(SimplexError {
-            loc: 0, // fix
-            msg: "Tried to parse {} as a tag, but the correspondent function couldn't resolve it".to_string(),
-            nature: ErrorNature::FaultyTag
-        })
-    } else { Ok(())}
+/// Do all the checks necessary to validate a `raw_element` as `Element`.
+fn is_element_ok(raw_element: &Vec<String>, reference: &str) -> Result<(), fmt::Error> {
+    if raw_element.len() < 2 {
+        eprintln!("A tag {} was not followed by its argument.", raw_element[0]); // Improve error msg
+        Err(fmt::Error)
+    } else if !(*raw_element[0] == format!("{}{}", TAG_MARKER, reference)) {
+        eprintln!("The tag \"{}\" is not valid.", raw_element[0]);
+        Err(fmt::Error)
+    } else { 
+        Ok(())
+    }   
 }
 
+// Deprecated?
+///// Make sure that the tag passed to any tag function corresponds to expectations.
+//fn check_tag (tag: &String, reference: &str) -> Result<(), fmt::Error> {
+//    if !(*tag == format!("{}{}", TAG_MARKER, reference)) {
+//        Err(fmt::Error)
+//    } else { 
+//        Ok(())
+//    }
+//}
+
 /// The `<p>` rendering function.
-fn text (raw_element: Vec<String>) -> Result<Element> {
-    check_tag(&raw_element[0], TAG_TEXT);
+fn text (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
+    is_element_ok(&raw_element, TAG_TEXT)?;
     let mut content = "<p>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<br>{}", raw_line);
@@ -213,18 +247,24 @@ fn text (raw_element: Vec<String>) -> Result<Element> {
 }
 
 /// The `<video>` rendering function.
-fn video (raw_element: Vec<String>) -> Result<Element> {
+fn video (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
     // Ignores info passed beyond raw_element[1].
-    check_tag(&raw_element[0], TAG_VIDEO)?;
+    is_element_ok(&raw_element, TAG_VIDEO)?;
     let video_path: String = raw_element[1].clone(); // it's ok to clone here, too little
+    //println!("{}", video_path);
     let video = file_base64(video_path, "video");
-    let content = format!("<video controls src=\"{}\">", video?);
-    Ok(Element {nature: ElementNature::Video, content: content + "</video>", number: 0}) // fix number
+    let vid_content = format!("<video controls src=\"{}\"></video>", video?);
+    Ok(Element {nature: ElementNature::Video, content: vid_content, number: 0}) // fix number
+}
+
+fn footer(raw_element: Vec<String>) -> Result<String, fmt::Error> {
+    is_element_ok(&raw_element, TAG_FOOTER)?;
+    Ok(raw_element[1].clone()) //ok to clone, just a text
 }
 
 /// The `<image>` rendering function.
-fn image (raw_element: Vec<String>) -> Result<Element> {
-    check_tag(&raw_element[0], TAG_IMAGE)?;
+fn image (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
+    is_element_ok(&raw_element, TAG_IMAGE)?;
     let image_path: String = raw_element[1].clone(); // it's ok to clone here, too little
     let image = file_base64(image_path, "image");
     let content = format!("<img src=\"{}\">", image?);
@@ -233,11 +273,18 @@ fn image (raw_element: Vec<String>) -> Result<Element> {
 }
 
 /// The `<div class=mermaid>` rendering function.
-fn mermaid (raw_element: Vec<String>) -> Result<Element> {todo!()}
+fn mermaid (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
+    is_element_ok(&raw_element, TAG_MERMAID)?;
+    let mut content = "<div class=\"center\">".to_string();
+    for raw_line in &raw_element[1..] {
+        content = content + &format!("{}", raw_line);
+    };
+    Ok(Element {nature: ElementNature::Mermaid, content: content + "<pre class=\"mermaid\">", number: 0}) // fix number
+}
 
 /// The `<ul>` rendering function.
-fn ulist (raw_element: Vec<String>) -> Result<Element> {
-    check_tag(&raw_element[0], TAG_ULIST)?;
+fn ulist (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
+    is_element_ok(&raw_element, TAG_ULIST)?;
     let mut content = "<ul>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
@@ -246,13 +293,13 @@ fn ulist (raw_element: Vec<String>) -> Result<Element> {
 }
 
 /// Generate an `<ol>` style listing.
-fn ordlist (raw_element: Vec<String>) -> Result<Element> {
-    check_tag(&raw_element[0], TAG_ORDLIST)?;
+fn ordlist (raw_element: Vec<String>) -> Result<Element, fmt::Error> {
+    is_element_ok(&raw_element, TAG_ORDLIST)?;
     let mut content = "<ol>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
     };
-    Ok(Element {nature: ElementNature::List, content: content + "</ol>", number: 0}) // fix number
+    Ok(Element {nature: ElementNature::OrdList, content: content + "</ol>", number: 0}) // fix number
 }
 
 /// The final HTML.
@@ -265,94 +312,100 @@ impl fmt::Display for HTML {
 
 /// The main parser, walks into a `Vec<String>` --- mainly from a file input 
 /// or stdin --- and outputs a complete presentation if everything is fine. 
-fn touring_machine (input: Vec<String>) -> Result<Vec<Slide>> {
+fn turing_machine (input: Vec<String>) -> Result<Vec<Slide>, fmt::Error> {
     // has a ordering system to make a side by side if two 
     // elements, a pyramid if three or a grid if four
     // To group and priorytize titles and subtitles
-    let mut raw_slides: Vec<Vec<String>> = input
+    let raw_slides: Vec<Vec<String>> = input
         .split(|raw_slide| raw_slide.starts_with(SEPARATOR))
         .filter(|line| !line.is_empty() || !line.is_comment())
         .map(|slide| slide.to_vec())
         .collect::<Vec<Vec<String>>>();
 
     // Split applied before creates a first Vec<String> empty.
-    raw_slides.remove(0);
+    //raw_slides.remove(0);
+    
+    //raw_slides.remove_invalids();
 
     Ok(build(raw_slides))?
 }
 
 /// Finally condense back a `Vec<Slide>` into `HTML` that is capable of being
 /// printed or outputed.
-fn render (slides: Vec<Slide>) -> Result<HTML> {
+fn render (slides: Vec<Slide>) -> Result<HTML, fmt::Error> {
     let mut html: String = String::new();
     if slides.len() < 1 {
-        return Err(SimplexError {
-            msg: "Empty Vec<Slide> passed to render()".to_string(),
-            loc: 0,
-            nature: ErrorNature::EmptySlide
-        })
+        panic!("Zero slides built.");
     }else{
         for slide in slides {
             html = html + &format!("{}", slide);
         }
     };
-    Ok(HTML("<body><div id=\"marcador\"></div> <div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>".to_string() + &html + "</body><script src=\"./script.js\"></script><link rel=\"stylesheet\" href=\"./style.css\">")) 
+
+    // A global variable is needed to avoid generate duplicates of mermaid script
+    let mermaid_file = String::from_utf8(include_bytes!("../example/mermaid-00886c59.js").to_vec()).expect("Não foi possível integrar o script mermaid");
+
+    Ok(HTML("<!DOCTYPE html><html><script type=\"module\">".to_string() + &mermaid_file + ";Tt.initialize({{ startOnLoad: true }});</script><body><div id=\"marcador\"></div> <div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>" + &html + "</body><script src=\"./script.js\"></script><link rel=\"stylesheet\" href=\"./style.css\"></html>")) 
 }
 
 /// Translate raw strings information into structured `Element` and `Slide` data.
-fn build (raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>> {
-    // Comparation tags.
-    let tag_olist = format!("{}{}", TAG_MARKER, TAG_ORDLIST);
-    let tag_ulist = format!("{}{}", TAG_MARKER, TAG_ULIST);
-    let tag_video = format!("{}{}", TAG_MARKER, TAG_VIDEO);
-    let tag_image = format!("{}{}", TAG_MARKER, TAG_IMAGE);
-    let tag_text = format!("{}{}", TAG_MARKER, TAG_TEXT);
-    let tag_mermaid = format!("{}{}", TAG_MARKER, TAG_MERMAID);
-
+fn build (raw_slides: Vec<Vec<String>>) -> Result<Vec<Slide>, fmt::Error> {
     let mut slides: Vec<Slide> = vec![];
     
     for raw_slide in raw_slides {
         let mut elements: Vec<Element> = vec![];
+        let mut draft_sld = false;
+        let mut foot: String = String::new();
+        let mut mermaid_script = (String::new(), false);
+        let mut has_mermaid = false;
 
         // a fuction has to be called here to return 
         // elements with nature
         //for (_, raw_element) in raw_slide.split_on_tag().into_iter().enumerate() {
         for raw_element in raw_slide.split_on_tag() {
-            elements.push(match &raw_element[0] {
-                tag if *tag == tag_ulist => {
+            elements.push(match &raw_element[0][1..] { // [1..] to skip tag marker
+                tag if tag == TAG_ULIST => {
                     ulist(raw_element)?
                 },
-                tag if *tag == tag_olist => {
+                tag if tag == TAG_ORDLIST => {
                     ordlist(raw_element)?
                 },
-                tag if *tag == tag_text => {
+                tag if tag == TAG_TEXT => {
                     text(raw_element)?
                 }
-                tag if *tag == tag_video => {
+                tag if tag == TAG_VIDEO => {
                     video(raw_element)?
                 },
-                tag if *tag == tag_image => {
+                tag if tag == TAG_IMAGE => {
                     image(raw_element)?
                 },
-                tag if *tag == tag_mermaid => {
+                tag if tag == TAG_MERMAID => {
+                    has_mermaid = true;
                     mermaid(raw_element)?
                 },
-                _ => {
-                    let error = SimplexError {
-                        nature: ErrorNature::UnknownTag,
-                        loc: 10,
-                        msg: format!("Unknown tag.")
+                tag if tag == TAG_MERMAIDSCRIPT => {
+                    Element::empty()                
+                },
+                tag if tag == TAG_FOOTER => {
+                    foot = match footer(raw_element) {
+                        Ok(footer) => format!("<footer>{}</footer>", footer),
+                        Err(err) => err.to_string() 
                     };
-                    Err(error)?
+                    Element::empty()                
+                },
+                tag if tag == DRAFT => {
+                    draft_sld = true;
+                    Element::empty()                
                 }
+                _ => {panic!("Unrecognised tag \"{}\".", &raw_element[0])}
             }); 
         };
-        slides.push(Slide {draft: false, number: 1, content: Ok(elements), foot: true})
+        slides.push(Slide {draft: draft_sld, number: 1, content: Ok(elements), footer: foot, mermaid: has_mermaid})
     };
     Ok(slides)
 }
 
-// The public exposed API that receives a raw `Vec<String>` and returns an `HTML`.
-pub fn sx_parser (input: Vec<String>) -> Result<HTML> {
-    Ok(render(touring_machine(input)?))?
+/// The public exposed API that receives a raw `Vec<String>` and returns an `HTML`.
+pub fn sx_parser (input: Vec<String>) -> Result<HTML, fmt::Error> {
+    Ok(render(turing_machine(input)?))?
 }
