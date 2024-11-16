@@ -114,9 +114,11 @@ figcaption {
   text-align: left;
 }
 .slide table {
-  max-width: 90vw;
+  /*
   margin: 0 auto;
   margin-top: 30vh;
+  */
+  max-width: 90vw;
   border-collapse: collapse;
 }
 
@@ -151,13 +153,13 @@ iframe {
 
 footer {
   position: fixed;
-  font-size: 50%;
+  font-size: 90%;
   background-color: rgba(200, 225, 255, 0.5); 
   left: 3rem;
+  bottom: 0;
   padding-right: 1em;
   padding-left: 1em;
-  max-width: 50vw;
-  bottom: 0;
+  max-width: 80vw;
   text-align: center;
   border-top: 2px solid #0060ab;
   color: black;
