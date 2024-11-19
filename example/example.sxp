@@ -10,20 +10,22 @@ Etc.
 .ordlist 
 Lists can be ordered, producing numbered items.
 In this case, two!
-#---
-#.video
-#example.mp4
+---
+.video
+example.mp4
 # The .video tag will insert the example.mp4 video on the same directory.
 ---
 .image
 example.jpg
-.draft
-# This slide contains an image but will not be rendered, since it's marked as draft.
 ---
-# Mermaid diagrams can be inserted also!
+.subheading 
+Mermaid diagrams can be inserted also!
 .mermaid
 graph TD;
-A(best) --> B(better);
+a(A) --> b(B);
+c(C) --> d(D);
+a --> c;
+b --> c;
 ---
 .heading 
 A title for the slide
@@ -32,8 +34,13 @@ A subtitle: let's make a table!
 .table 
 1st column | 2nd | 3rd 
 2nd line | middle collumn | last
+.text
+The next slide is a blank one.
 ---
+.image
+example.jpg
 .draft
+# This slide contains an image but will not be rendered, since it's marked as draft.
 .footer 
 A foot note to be shown in all slides.
 # Footer text can be inserted at any slide, even on draft ones.

@@ -153,28 +153,28 @@ function toggleMovement() {
     circle.style.display = 'none';
   }
 }
-function alterarTamanhoFonte() {
-    var elementosSlide = document.querySelectorAll(".slide");
-    if (elementoSlide) {
-        var novoTamanhoFonte = "16px";
-        elementoSlide.style.fontSize = novoTamanhoFonte;
-    } else {
-        console.error("Elemento 'slide' não encontrado.");
-    }
-}
+//function alterarTamanhoFonte() {
+//    var elementosSlide = document.querySelectorAll(".slide");
+//    if (elementoSlide) {
+//        var novoTamanhoFonte = "16px";
+//        elementoSlide.style.fontSize = novoTamanhoFonte;
+//    } else {
+//        console.error("Elemento 'slide' não encontrado.");
+//    }
+//}
 
 // Executa uma tecl 'k' para iniciar layout correta
-document.addEventListener('DOMContentLoaded', function() {
-  const event = new KeyboardEvent('keydown', {
-    key: 'k',
-    keyCode: 75,
-    code: 'KeyK',
-    which: 75,
-    shiftKey: false, 
-    ctrlKey: false, 
-    altKey: false, 
-    metaKey: false, 
-  });
-  
-  document.dispatchEvent(event);
-});
+//document.addEventListener('DOMContentLoaded', function() {
+//  const event = new KeyboardEvent('keydown', {
+//    key: 'k',
+//    keyCode: 75,
+//    code: 'KeyK',
+//    which: 75,
+//    shiftKey: false, 
+//    ctrlKey: false, 
+//    altKey: false, 
+//    metaKey: false, 
+//  });
+//  
+//  document.dispatchEvent(event);
+//});

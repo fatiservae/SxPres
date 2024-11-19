@@ -18,6 +18,7 @@ fn main() -> Result<(), Error>{
 
     let mut slides: Vec<Slide> = vec![];
     let mut has_mermaid = false;
+    let mut foot: Result<String, Error> = Ok(String::new());
     
     for raw_slide in raw_slides {
         let mut elements: Vec<Element> = vec![];
@@ -65,12 +66,7 @@ fn main() -> Result<(), Error>{
                         None
                     },
                     tag if tag.starts_with(TAG_FOOTER) => {
-                        let _ = match footer(raw_element) {
-                            Ok(footer) => {
-                                format!("<footer>{}</footer>", footer)
-                            },
-                            Err(err) => err.to_string() 
-                        };
+                        foot = footer(raw_element);
                         None
                     },
                     tag if tag.starts_with(DRAFT) => {
@@ -91,6 +87,16 @@ fn main() -> Result<(), Error>{
                     None => ()
                 }
             }
+
+            elements = elements.organize();
+            // The `elements: Vec<Element>` should suffer ordering,
+            // checking and other StultusVisio philosophy acts. 
+            // e.g: if the user passes a .heading tag, it should always
+            // be the first on the slide, to occupy the top. Some 
+            // prohibitions are also desireble, like no more than two
+            // tables per slide, a single video etc. In another words,
+            // the main characteristic of StultusVisio is to free the 
+            // user from formatting.
         };
         slides.push(
             Slide {
@@ -101,7 +107,7 @@ fn main() -> Result<(), Error>{
         )
     };
 
-    let _ = output(render(has_mermaid, slides)?, args);
+    let _ = output(render(foot, has_mermaid, slides)?, args);
     
     println!("Done!");
     

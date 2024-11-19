@@ -1,5 +1,5 @@
 # StultusVisio
-**A minimalist slide presentations software.**
+**Stupidless minimalist slide presentations software!**
 ## About
 Just a software to lazy people make quick presentations.
 ## Philosophy
@@ -18,7 +18,7 @@ It's self explanatory:
 .text
 This is a text in a slide.
 .list 
-And this is a firtst item of a list.
+And this is a first item of a list.
 This is the second.
 Etc.
 ---

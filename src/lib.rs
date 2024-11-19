@@ -26,11 +26,14 @@ pub const TAG_VIDEO: &str = "video";
 pub const TAG_IMAGE: &str = "image";
 pub const DRAFT: &str = "draft";
 
+/// `Cli` from `Clap`.
 #[derive(Parser)]
 pub struct Cli {
+    /// Points to a file as input.
     #[arg(short, long)]
     input: PathBuf,
 
+    /// Defines the output file, no extension needed.
     #[arg(short, long)]
     output: Option<PathBuf>,
 
@@ -38,6 +41,7 @@ pub struct Cli {
     //verbose: bool,
 }
 
+/// Uses `Clap` to handle the output.
 pub fn output(content: HTML, args: Cli) -> io::Result<()>{
     let output_path = match args.output {
         Some(mut output) => {
@@ -56,8 +60,8 @@ pub fn output(content: HTML, args: Cli) -> io::Result<()>{
     Ok(())
 }
 
+/// Treats all the forms of input using `Clap`.
 pub fn input(args: &Cli) -> Result<Vec<String>, fmt::Error> {
-
     if args.input.exists() && args.input.is_file() {
         let file = match File::open(&args.input) {
             Ok(file) => file,
@@ -80,6 +84,8 @@ pub fn input(args: &Cli) -> Result<Vec<String>, fmt::Error> {
     }
 }
 
+/// Define the nature of the elements. This can help organize the way 
+/// multiple elements will be arranged.
 enum ElementNature {
     Heading,
     Subheading,
@@ -94,9 +100,25 @@ enum ElementNature {
 /// An slide is built from elements that are rendered to 
 /// a `<div class=element>` that respect the SxPres philosophy.
 pub struct Element {
-    // Will be used to avoid weird Elements combinations
+    /// Will be used to control Elements combinations.
     nature: ElementNature,
     content: String,
+}
+
+pub trait Organize {
+    fn organize(self) -> Self;
+}
+impl Organize for Vec<Element>{
+    fn organize(self) -> Self {
+        //if self.contains(
+        //let title: Option<Element>;
+        //for element in self {
+        //    match element.nature {
+        //        ElementNature::Text => 
+        //    }
+        //}
+    self
+    }
 }
 
 /// Each fully presentable slide from the entire slideshow. It is 
@@ -147,24 +169,6 @@ impl IsComment for String {
         {true} else {false}
     }
 }
-//impl IsComment for &&[String] {
-//    fn is_comment(self) -> bool {
-//        if (*(*self)).starts_with(&[COMMENT_MARKER.to_string()]) {
-//            true
-//        } else {
-//            false
-//        }
-//    }
-//}
-//impl IsComment for &String {
-//    fn is_comment(self) -> bool {
-//        if self.starts_with(&[COMMENT_MARKER.to_string()]) {
-//            true
-//        } else {
-//            false
-//        }
-//    }
-//}
 
 /// Split a `Vec<String>` right on a tag, grouping them into a new 
 /// `Vec<String>`. The result of this process is a `Vec<Vec<String>>`, 
@@ -260,13 +264,14 @@ Result<(), fmt::Error> {
 pub fn text (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_TEXT)?;
-    let mut content = "<p>".to_string();
-    for raw_line in &raw_element[1..] {
-        content = content + &format!("<br>{}", raw_line);
+    let mut p = "<div class=\"element\"><p>".to_string();
+    p = p + &raw_element[1].to_string();
+    for raw_line in &raw_element[2..] {
+        p = p + &format!("<br>{}", raw_line);
     };
     Ok(Element {
         nature: ElementNature::Text, 
-        content: content + "</p>"
+        content: p + "</p></div>"
         }
     )
 }
@@ -276,7 +281,10 @@ pub fn heading (raw_element: Vec<String>) ->
 Result<Element, fmt::Error> {
     // Ignores info passed beyond raw_element[1].
     is_element_ok(&raw_element, TAG_HEADING)?;
-    let heading = format!("<div class=\"element\"><h1>{}</h1></div>", raw_element[1]);
+    let heading = format!("
+        <div class=\"element\"><h1>{}</h1></div>", 
+        raw_element[1]
+    );
     Ok(Element {
         nature: ElementNature::Heading, 
         content: heading
@@ -313,7 +321,7 @@ Result<Element, fmt::Error> {
 pub fn table (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_TABLE)?;
-    let mut table = String::from("<table>");
+    let mut table = String::from("<div class=\"element\"><table>");
     table += &format!(
         "<thead><tr><th>{}</th></tr></thead>", 
         raw_element[1].replace("|", "</th><th>")
@@ -324,14 +332,15 @@ Result<Element, fmt::Error> {
             line.replace("|", "</td><td>")
         );
     };
-    table += "</table>";
+    table += "</table></div>";
     Ok(Element {nature: ElementNature::Video, content: table}) 
 }
 
+/// Defines a foot message.
 pub fn footer(raw_element: Vec<String>) -> 
 Result<String, fmt::Error> {
     is_element_ok(&raw_element, TAG_FOOTER)?;
-    Ok(raw_element[1].clone()) 
+    Ok(format!("<footer>{}</footer>", raw_element[1]))
 }
 
 /// The `<image>` rendering function.
@@ -352,17 +361,19 @@ Result<Element, fmt::Error> {
     )
 }
 
-/// The `<div class=mermaid>` rendering function.
+/// The `mermaid` element rendering function.
 pub fn mermaid (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_MERMAID)?;
-    let mut content = "<div class=\"center\">".to_string();
+    let mut content = String::new();
     for raw_line in &raw_element[1..] {
         content = content + &format!("{}", raw_line);
     };
     Ok(Element {
         nature: ElementNature::Mermaid, 
-        content: "<pre class=\"mermaid\">".to_owned() + &content + "</pre>"
+        content: 
+            "<div class=\"element\"><pre class=\"mermaid\">".to_owned()
+            + &content + "</pre></div>"
         }
     )
 }
@@ -386,7 +397,7 @@ Result<Element, fmt::Error> {
 pub fn ordlist (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_ORDLIST)?;
-    let mut content = "<div class=\"element\"><ul>".to_string();
+    let mut content = "<div class=\"element\"><ol>".to_string();
     for raw_line in &raw_element[1..] {
         content = content + &format!("<li>{}</li>", raw_line);
     };
@@ -407,7 +418,8 @@ impl fmt::Display for HTML {
 
 /// Finally condense back a `Vec<Slide>` into `HTML` that can be 
 /// printed or outputed.
-pub fn render (mermaid: bool, slides: Vec<Slide>) -> 
+pub fn render (
+footer: Result<String, fmt::Error>, mermaid: bool, slides: Vec<Slide>) -> 
 Result<HTML, fmt::Error> {
     let mut html: String = String::new();
     if slides.len() < 1 {
@@ -418,24 +430,29 @@ Result<HTML, fmt::Error> {
         }
     };
 
-    // TODO: Wrap mermaid_file in Option<String>.
     let mut mermaid_script = String::new();
+    // TODO: Wrap mermaid_file in Option<String>.
+    // Mermaid is cumbersome to integrate, since the only way to inject
+    // the script to a page is to import, because the script calls for 
+    // other ones.
     if mermaid {
-        let mermaid_inner = String::from_utf8(
-            include_bytes!("./mermaid.js")
-                .to_vec())
-                .expect("Can't integrate the mermaid script.");
-        mermaid_script = "<script type=\"module\">".to_owned() + 
-            &mermaid_inner + 
-            ";Tt.initialize({{ startOnLoad: true }});</script>";
+        mermaid_script = "<script type=\"module\">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({ startOnLoad: true });</script>".to_string();
+    };
+
+    let foot = match footer {
+        Ok(foot) =>  foot,
+        _ => "".to_string()
     };
 
     Ok(HTML(
-        "<!DOCTYPE html><html><head>".to_owned() 
+        "<!DOCTYPE html>\n<html>\n<head>\n".to_owned() 
         + &mermaid_script
-        + "<body><div id=\"marcador\"></div><div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>" 
+        + &foot
+        + "<div id=\"marcador\"></div>"
+        + "<div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>" 
+        + "</head>\n<body>\n"
         + &html 
-        + "</body><script src=\"./script.js\"></script><link rel=\"stylesheet\" href=\"./style.css\"></html>"
+        + "\n</body>\n<script src=\"./script.js\"></script>\n<link rel=\"stylesheet\" href=\"./style.css\">\n</html>"
     )) 
 }
 
