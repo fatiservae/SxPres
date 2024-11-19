@@ -1,3 +1,10 @@
+.heading
+StultusVisio
+.subheading
+Let's learn about it!
+.text
+Press 'J'
+---
 .text
 This is a text in a slide.
 .list 
@@ -9,14 +16,17 @@ Etc.
 # Those three dashes (---) starts a new slide.
 .ordlist 
 Lists can be ordered, producing numbered items.
-In this case, two!
+In this case, three!
+Next slide, an image and then a video...
+---
+.image
+example.jpg
+One caption to this image:
+Line breaks are permitted!
 ---
 .video
 example.mp4
 # The .video tag will insert the example.mp4 video on the same directory.
----
-.image
-example.jpg
 ---
 .subheading 
 Mermaid diagrams can be inserted also!
@@ -37,6 +47,7 @@ A subtitle: let's make a table!
 .text
 The next slide is a blank one.
 ---
+---
 .image
 example.jpg
 .draft
@@ -45,5 +56,8 @@ example.jpg
 A foot note to be shown in all slides.
 # Footer text can be inserted at any slide, even on draft ones.
 ---
+# "Actually", configs can be passed at any time, like the logo below:
+.logo
+logo.png
 .text
 The end.
