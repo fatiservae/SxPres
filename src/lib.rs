@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 //#![allow(unused)]
 use {
     core::panic,
@@ -14,6 +16,7 @@ pub const DEFAULT_OUTPUT: &str = "html";
 pub const TAG_MARKER: &str = ".";
 pub const SEPARATOR: &str = "---";
 pub const TAG_FOOTER: &str = "footer";
+pub const TAG_LOGO: &str = "logo";
 pub const TAG_HEADING: &str = "heading";
 pub const TAG_SUBHEADING: &str = "subheading";
 pub const TAG_TABLE: &str = "table";
@@ -343,20 +346,37 @@ Result<String, fmt::Error> {
     Ok(format!("<footer>{}</footer>", raw_element[1]))
 }
 
+pub fn logo(raw_element: Vec<String>,) -> Result<String, fmt::Error> {
+    is_element_ok(&raw_element, TAG_LOGO)?;
+    let image = file_base64(raw_element[1].clone(), "image");
+    Ok(format!("<img class=\"logo\" src=\"{}\"></img>", image?))
+}
+
 /// The `<image>` rendering function.
+/// Captions of figures are buided from the third line fowards 
+/// on the raw_element.
 pub fn image (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_IMAGE)?;
     let image_path: String = raw_element[1].clone(); 
     let image = file_base64(image_path, "image");
-    let content = format!("<img src=\"{}\">", image?);
-    let captions = format!(
-        "<figcaption>{}</figcaption>", 
-        raw_element[2..].join("<br>")
-    );
+    let mut _content = format!("<div class=\"element\"><img src=\"{}\">", image?);
+
+    // To treat captions...
+    if raw_element.len() > 2 {
+        let mut captions = String::from("<figcaption>"); 
+        captions = captions + &format!("{}", raw_element[2]);
+        for line in &raw_element[3..] {
+            captions = captions + &format!("<br>{}", line);
+        };
+        _content = _content + &captions + "</figcaption></img></div>";
+    } else {
+        _content = _content + "</img></div>";
+    };
+
     Ok(Element {
         nature: ElementNature::Image, 
-        content: content + &captions + "</img>"
+        content: _content
         }
     )
 }
@@ -419,16 +439,18 @@ impl fmt::Display for HTML {
 /// Finally condense back a `Vec<Slide>` into `HTML` that can be 
 /// printed or outputed.
 pub fn render (
-footer: Result<String, fmt::Error>, mermaid: bool, slides: Vec<Slide>) -> 
+logo: Result<String, fmt::Error>, footer: Result<String, fmt::Error>, mermaid: bool, slides: Vec<Slide>) -> 
 Result<HTML, fmt::Error> {
-    let mut html: String = String::new();
+    let mut body: String = String::from("<body>\n");
     if slides.len() < 1 {
         panic!("Zero slides built.");
     }else{
         for slide in slides {
-            html = html + &format!("{}", slide);
+            body = body + &format!("{}", slide);
         }
     };
+
+    body = body + "</body>";
 
     let mut mermaid_script = String::new();
     // TODO: Wrap mermaid_file in Option<String>.
@@ -444,15 +466,36 @@ Result<HTML, fmt::Error> {
         _ => "".to_string()
     };
 
+    let logo_img = match logo {
+        Ok(logo) => logo,
+        _ => "".to_string()
+    };
+
+    let script = "<script>".to_owned() + 
+                &String::from_utf8(include_bytes!("./script.js")
+                    .to_vec()).expect("Can't include \'script.js\' during compilation.") +
+                "</script>";
+
+    let css = "<style>".to_owned() + 
+                &String::from_utf8(include_bytes!("./style.css")
+                    .to_vec()).expect("Can't include \'style.css\' during compilation.") +
+                "</style>";
+
     Ok(HTML(
         "<!DOCTYPE html>\n<html>\n<head>\n".to_owned() 
         + &mermaid_script
+        + &css
         + &foot
+        + &logo_img
         + "<div id=\"marcador\"></div>"
         + "<div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>" 
-        + "</head>\n<body>\n"
-        + &html 
-        + "\n</body>\n<script src=\"./script.js\"></script>\n<link rel=\"stylesheet\" href=\"./style.css\">\n</html>"
+        + "</head>\n"
+        + &body
+        // `&script` has to be inserted at the end, so that only with
+        // the whole page built it can calls to document.ElementById's 
+        // methods in the /src/script.js.
+        + &script 
+        + "</html>"
     )) 
 }
 

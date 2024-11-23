@@ -1,3 +1,5 @@
+> ! ⚠️ Warning: Warning: everything in a very premature state.
+
 # StultusVisio
 **Stupidless minimalist slide presentations software!**
 ## About
@@ -56,10 +58,12 @@ A foot note to be shown in all slides.
 # Footer text can be inserted at any slide.
 ``` 
 
-Then, compile the presentation:
+Then, in `example` dir, compile the presentation:
 
 ```
-$ stultusvisio -i example.stv
+$ cargo build --release
+
+$ ../target/release/sxpres -i example.stv
 ```
 
 A `example.html` file will be produced. Just open with some browser.

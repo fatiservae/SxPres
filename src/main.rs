@@ -19,6 +19,7 @@ fn main() -> Result<(), Error>{
     let mut slides: Vec<Slide> = vec![];
     let mut has_mermaid = false;
     let mut foot: Result<String, Error> = Ok(String::new());
+    let mut logo_img : Result<String, Error> = Ok(String::new());
     
     for raw_slide in raw_slides {
         let mut elements: Vec<Element> = vec![];
@@ -69,6 +70,10 @@ fn main() -> Result<(), Error>{
                         foot = footer(raw_element);
                         None
                     },
+                    tag if tag.starts_with(TAG_LOGO) => {
+                        logo_img = logo(raw_element);
+                        None
+                    },
                     tag if tag.starts_with(DRAFT) => {
                         is_draft = true;
                         None
@@ -107,7 +112,7 @@ fn main() -> Result<(), Error>{
         )
     };
 
-    let _ = output(render(foot, has_mermaid, slides)?, args);
+    let _ = output(render(logo_img, foot, has_mermaid, slides)?, args);
     
     println!("Done!");
     

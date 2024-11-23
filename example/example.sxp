@@ -18,15 +18,15 @@ Etc.
 Lists can be ordered, producing numbered items.
 In this case, three!
 Next slide, an image and then a video...
----
-.image
-example.jpg
-One caption to this image:
-Line breaks are permitted!
----
-.video
-example.mp4
-# The .video tag will insert the example.mp4 video on the same directory.
+#---
+#.image
+#example.jpg
+#One caption to this image:
+#Line breaks are permitted!
+#---
+#.video
+#example.mp4
+## The .video tag will insert the example.mp4 video on the same directory.
 ---
 .subheading 
 Mermaid diagrams can be inserted also!
@@ -47,15 +47,15 @@ A subtitle: let's make a table!
 .text
 The next slide is a blank one.
 ---
----
-.image
-example.jpg
-.draft
-# This slide contains an image but will not be rendered, since it's marked as draft.
-.footer 
-A foot note to be shown in all slides.
-# Footer text can be inserted at any slide, even on draft ones.
----
+#---
+#.image
+#example.jpg
+#.draft
+## This slide contains an image but will not be rendered, since it's marked as draft.
+#.footer 
+#A foot note to be shown in all slides.
+## Footer text can be inserted at any slide, even on draft ones.
+#---
 # "Actually", configs can be passed at any time, like the logo below:
 .logo
 logo.png
