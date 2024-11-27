@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 //#![allow(unused)]
 use {
     core::panic,
@@ -68,7 +66,7 @@ pub fn input(args: &Cli) -> Result<Vec<String>, fmt::Error> {
     if args.input.exists() && args.input.is_file() {
         let file = match File::open(&args.input) {
             Ok(file) => file,
-            Err(err) => panic!("Erro ao abrir o arquivo: {}", err),
+            Err(err) => panic!("Can't open file {}", err),
         };
 
         let reader = io::BufReader::new(file);
@@ -78,17 +76,18 @@ pub fn input(args: &Cli) -> Result<Vec<String>, fmt::Error> {
         match lines {
             Ok(lines) => Ok(lines),
             Err(err) => {
-                eprintln!("Erro ao ler linhas: {}", err);
+                eprintln!("Error reading lines {}", err);
                 Err(fmt::Error) 
             }
         }
     } else {
-        panic!("error")
+        panic!("Error: no arguments passed.")
     }
 }
 
 /// Define the nature of the elements. This can help organize the way 
 /// multiple elements will be arranged.
+#[derive(PartialEq)]
 enum ElementNature {
     Heading,
     Subheading,
@@ -108,11 +107,27 @@ pub struct Element {
     content: String,
 }
 
+//struct Group {
+//    Title: Option<Vec<Element>>,
+//    Content: Option<Vec<Element>> 
+//}
 pub trait Organize {
     fn organize(self) -> Self;
 }
 impl Organize for Vec<Element>{
+    /// For now, organize() just separates the `headings` and the 
+    /// `subheadings` in different `<div class=elementGroup>` so 
+    /// that in the `CSS` configuration it can be formatted separately.
     fn organize(self) -> Self {
+        let mut reorganized: (Vec<Element>, Vec<Element>)= self.into_iter()
+            .partition(|element: &Element| 
+                element.nature == ElementNature::Heading ||
+                element.nature == ElementNature::Subheading);
+
+        reorganized.0.append(&mut reorganized.1);
+
+        reorganized.0
+
         //if self.contains(
         //let title: Option<Element>;
         //for element in self {
@@ -120,7 +135,6 @@ impl Organize for Vec<Element>{
         //        ElementNature::Text => 
         //    }
         //}
-    self
     }
 }
 
@@ -182,10 +196,6 @@ impl IsComment for String {
 pub trait SplitOnTag {
     fn split_on_tag(self) -> Vec<Vec<String>>;
 }
-pub trait CleanTag {
-    fn clean_tag(self) -> Self;
-}
-
 impl SplitOnTag for Vec<String> {
     fn split_on_tag(self) -> Vec<Vec<String>> {
         let mut result = Vec::new();
@@ -206,6 +216,10 @@ impl SplitOnTag for Vec<String> {
         }
     result
     }
+}
+
+pub trait CleanTag {
+    fn clean_tag(self) -> Self;
 }
 impl CleanTag for Vec<String> {
     fn clean_tag(mut self) -> Self {
