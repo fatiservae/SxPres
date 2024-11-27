@@ -468,9 +468,11 @@ Result<HTML, fmt::Error> {
 
     let mut mermaid_script = String::new();
     // TODO: Wrap mermaid_file in Option<String>.
+    //
     // Mermaid is cumbersome to integrate, since the only way to inject
     // the script to a page is to import, because the script calls for 
-    // other ones.
+    // other ones in the mermaid remote server, thus turning the job too
+    // manual and error prone to do.
     if mermaid {
         mermaid_script = "<script type=\"module\">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({ startOnLoad: true });</script>".to_string();
     };
