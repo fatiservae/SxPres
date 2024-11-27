@@ -11,6 +11,9 @@ This is a text in a slide.
 And this is a firtst item of a list.
 This is the second.
 Etc.
+.heading
+Texts and lists:
+# Even that the .heading appears last, will be rendered on the top of the slide.
 ---
 # This is a comment and will be ingored.
 # Those three dashes (---) starts a new slide.
