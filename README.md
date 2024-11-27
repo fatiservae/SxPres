@@ -1,4 +1,4 @@
-> ! ⚠️ Warning: everything in a very premature state.
+> ⚠️ Warning: everything in a very premature state.
 
 # StultusVisio
 **Stupidless minimalist slide presentations software!**
