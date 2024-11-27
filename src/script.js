@@ -7,8 +7,8 @@ const popupText = document.getElementById("conteudo-popup");
 
 function popUpShow(){
     popupText.innerHTML = `
-                 <h1>Pressione <em>"t"</em><br> para fechar ajuda</h1>
-                 <h2>Slide ${currentslideIndex+1} de ${slides.length}</h2>
+                 <h1>Press <em>"t"</em><br> to quit this help</h1>
+                 <h2>Slide ${currentslideIndex+1} of ${slides.length}</h2>
                  <table>
                  <tr>
                    <th>Command</th><th>Key</th>
