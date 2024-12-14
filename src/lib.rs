@@ -10,7 +10,7 @@ use {
     clap::Parser
 };
 pub const COMMENT_MARKER: &str = "#";
-pub const DEFAULT_OUTPUT: &str = "html";
+pub const STD_OUTPUT_FMT: &str = "html";
 pub const TAG_MARKER: &str = ".";
 pub const SEPARATOR: &str = "---";
 pub const TAG_FOOTER: &str = "footer";
@@ -25,7 +25,7 @@ pub const TAG_MERMAID: &str = "mermaid";
 pub const TAG_MERMAIDSCRIPT: &str = "mermaidscript";
 pub const TAG_VIDEO: &str = "video";
 pub const TAG_IMAGE: &str = "image";
-pub const DRAFT: &str = "draft";
+pub const TAG_DRAFT: &str = "draft";
 
 /// `Cli` from `Clap`.
 #[derive(Parser)]
@@ -46,12 +46,12 @@ pub struct Cli {
 pub fn output(content: HTML, args: Cli) -> io::Result<()>{
     let output_path = match args.output {
         Some(mut output) => {
-            output.set_extension(DEFAULT_OUTPUT);
+            output.set_extension(STD_OUTPUT_FMT);
             output
         },
         None => {
             let mut output = args.input.clone();
-            output.set_extension(DEFAULT_OUTPUT); 
+            output.set_extension(STD_OUTPUT_FMT); 
             output
         }
     };
@@ -86,17 +86,18 @@ pub fn input(args: &Cli) -> Result<Vec<String>, fmt::Error> {
 }
 
 /// Define the nature of the elements. This can help organize the way 
-/// multiple elements will be arranged.
-#[derive(PartialEq)]
+/// multiple elements will be arranged. The order of declaration matters
+/// since that organize() uses sort_by_key() method.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum ElementNature {
     Heading,
     Subheading,
     Text,
-    List,
     OrdList,
-    Mermaid,
+    List,
     Video,
-    Image
+    Image,
+    Mermaid
 }
 
 /// An slide is built from elements that are rendered to 
@@ -107,10 +108,6 @@ pub struct Element {
     content: String,
 }
 
-//struct Group {
-//    Title: Option<Vec<Element>>,
-//    Content: Option<Vec<Element>> 
-//}
 pub trait Organize {
     fn organize(self) -> Self;
 }
@@ -118,28 +115,21 @@ impl Organize for Vec<Element>{
     /// For now, organize() just separates the `headings` and the 
     /// `subheadings` in different `<div class=elementGroup>` so 
     /// that in the `CSS` configuration it can be formatted separately.
-    fn organize(self) -> Self {
-        let mut reorganized: (Vec<Element>, Vec<Element>)= self.into_iter()
-            .partition(|element: &Element| 
-                element.nature == ElementNature::Heading ||
-                element.nature == ElementNature::Subheading);
+    fn organize(mut self) -> Self {
 
-        reorganized.0.append(&mut reorganized.1);
-
-        reorganized.0
-
-        //if self.contains(
-        //let title: Option<Element>;
-        //for element in self {
-        //    match element.nature {
-        //        ElementNature::Text => 
-        //    }
-        //}
+        if self.len() < 1 {
+            self
+        } else {
+            // Cloning here is ok since Element::Nature is a 
+            // unit type enum.
+            self.sort_by_key(|e| e.nature.clone());
+            self
+        }
     }
 }
 
 /// Each fully presentable slide from the entire slideshow. It is 
-/// a `<div class=slide>` that will be formatted by `css` to fill
+/// a `<div class=slide>` that will be formatted by `CSS` to fill
 /// the screen and respect the `Javascript` controls.
 pub struct Slide {
     //pub number: usize, // NEEDED??
@@ -353,13 +343,18 @@ Result<Element, fmt::Error> {
     Ok(Element {nature: ElementNature::Video, content: table}) 
 }
 
-/// Defines a foot message.
+/// Render a `<footer>` element with a foot message on all slides.
 pub fn footer(raw_element: Vec<String>) -> 
 Result<String, fmt::Error> {
     is_element_ok(&raw_element, TAG_FOOTER)?;
     Ok(format!("<footer>{}</footer>", raw_element[1]))
 }
 
+/// Render a `<image class=logo>` that is treated in `CSS` as 
+/// a fixed right top logomark to the slides.
+/// 
+/// TODO: 1) Make the option to change the logo from a new definition
+/// onwards; and 2) Make the option to choose the position.
 pub fn logo(raw_element: Vec<String>,) -> Result<String, fmt::Error> {
     is_element_ok(&raw_element, TAG_LOGO)?;
     let image = file_base64(raw_element[1].clone(), "image");
@@ -395,7 +390,8 @@ Result<Element, fmt::Error> {
     )
 }
 
-/// The `mermaid` element rendering function.
+/// The `<pre class=mermaid>` element rendering function. Resolves a mermaid
+/// diagram passed line-by-line.
 pub fn mermaid (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_MERMAID)?;

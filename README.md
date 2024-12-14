@@ -4,8 +4,11 @@
 **Stupidless minimalist slide presentations software!**
 ## About
 Just a software to lazy people make quick presentations.
+
+The main characteristic of StultusVisio is to free the user from formatting.
+
 ## Philosophy
-A slide presentation should be clean and simple.
+A slide presentation should be clean and simple. If you need fancy tools to build a presentation, consider making a video, writing a book or defend a thesis.  
 
 StultusVisio do not accept more than four elements per slide. An element can be an image, a video, a text, a listing etc.
 

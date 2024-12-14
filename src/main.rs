@@ -7,7 +7,8 @@ fn main() -> Result<(), Error>{
     let args = Cli::parse();
     let input: Vec<String> = input(&args)?;
 
-    // Translate raw strings into structured `Element` and `Slide` data.
+    // A primitive form of slides, that will be translate 
+    // into structured `Element` and `Slide` data.
     let raw_slides: Vec<Vec<String>> = input
         .into_iter()
         .filter(|line| !line.is_empty() && !line.is_comment())
@@ -29,7 +30,7 @@ fn main() -> Result<(), Error>{
         for mut raw_element in raw_slide.split_on_tag() {
         raw_element = raw_element.clean_tag();
         // cleaning spaces on the tag line before processing 
-        // is necessary, since the match acts like a Turing 
+        // is necessary, since the match bellow acts like a Turing 
         // machine over raw_element.
         //raw_element[0] = raw_element[0].replace(" ", "");
             let raw_result: Option<Element> = 
@@ -74,7 +75,7 @@ fn main() -> Result<(), Error>{
                         logo_img = logo(raw_element);
                         None
                     },
-                    tag if tag.starts_with(DRAFT) => {
+                    tag if tag.starts_with(TAG_DRAFT) => {
                         is_draft = true;
                         None
                     }
@@ -105,8 +106,8 @@ fn main() -> Result<(), Error>{
         };
         slides.push(
             Slide {
-                draft: is_draft, 
                 //number: 1, 
+                draft: is_draft, 
                 content: Ok(elements)
             }
         )
