@@ -468,7 +468,7 @@ Result<HTML, fmt::Error> {
     // Mermaid is cumbersome to integrate, since the only way to inject
     // the script to a page is to import, because the script calls for 
     // other ones in the mermaid remote server, thus turning the job too
-    // manual and error prone to do.
+    // error prone.
     if mermaid {
         mermaid_script = "<script type=\"module\">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({ startOnLoad: true });</script>".to_string();
     };
@@ -494,20 +494,29 @@ Result<HTML, fmt::Error> {
                 "</style>";
 
     Ok(HTML(
-        "<!DOCTYPE html>\n<html>\n<head>\n".to_owned() 
-        + &mermaid_script
-        + &css
-        + &foot
-        + &logo_img
-        + "<div id=\"marcador\"></div>"
-        + "<div id=\"popup\"><p><span id=\"conteudo-popup\"></span></p></div>" 
-        + "</head>\n"
-        + &body
-        // `&script` has to be inserted at the end, so that only with
-        // the whole page built it can calls to document.ElementById's 
-        // methods in the /src/script.js.
-        + &script 
-        + "</html>"
+        String::from(
+            format!(
+                "<!DOCTYPE html>\n
+                    <html>\n
+                    <head>\n
+                    {}{}{}{}
+                    <div id=\"marcador\"></div>
+                    <div id=\"popup\">
+                        <p><span id=\"conteudo-popup\"></span></p>
+                    </div></head>\n
+                    {}{}
+                    </html>",
+                &mermaid_script,
+                &css,
+                &foot,
+                &logo_img,
+                &body,
+                // `&script` has to be inserted at the end, so that only with
+                // the whole page built it can calls to document.ElementById's 
+                // methods in the /src/script.js.
+                &script 
+            )
+        )
     )) 
 }
 
