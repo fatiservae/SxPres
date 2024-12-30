@@ -401,9 +401,9 @@ Result<Element, fmt::Error> {
     };
     Ok(Element {
         nature: ElementNature::Mermaid, 
-        content: 
-            "<div class=\"element\"><pre class=\"mermaid\">".to_owned()
-            + &content + "</pre></div>"
+        content: format!(
+            "<div class=\"element\"><pre class=\"mermaid\">{}</pre></div>",
+            &content)
         }
     )
 }
@@ -412,13 +412,13 @@ Result<Element, fmt::Error> {
 pub fn ulist (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_ULIST)?;
-    let mut content = "<div class=\"element\"><ul>".to_string();
+    let mut out = String::from("<div class=\"element\"><ul>");
     for raw_line in &raw_element[1..] {
-        content = content + &format!("<li>{}</li>", raw_line);
+        out = out + &format!("<li>{}</li>", raw_line) + "</ul></div>";
     };
     Ok(Element {
         nature: ElementNature::List, 
-        content: content + "</ul></div>", 
+        content: out, 
         }
     )
 }
@@ -427,13 +427,13 @@ Result<Element, fmt::Error> {
 pub fn ordlist (raw_element: Vec<String>) -> 
 Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_ORDLIST)?;
-    let mut content = "<div class=\"element\"><ol>".to_string();
+    let mut out = "<div class=\"element\"><ol>".to_string();
     for raw_line in &raw_element[1..] {
-        content = content + &format!("<li>{}</li>", raw_line);
+        out = out + &format!("<li>{}</li>", raw_line) + "</ol></div>";
     };
     Ok(Element {
         nature: ElementNature::OrdList, 
-        content: content + "</ol></div>", 
+        content : out, 
         }
     )
 }
