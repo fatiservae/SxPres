@@ -1,3 +1,8 @@
+// See licence at the end.
+//
+// By Jefferson T.
+// https://jeffersontorres.com.br
+
 use sxpres::*;
 use std::fmt::Error;
 use clap::Parser;
@@ -22,7 +27,7 @@ fn main() -> Result<(), Error>{
     let mut foot: Result<String, Error> = Ok(String::new());
     let mut logo_img : Result<String, Error> = Ok(String::new());
     
-    for raw_slide in raw_slides {
+    for (slide_no, raw_slide) in raw_slides.into_iter().enumerate() {
         let mut elements: Vec<Element> = vec![];
         let mut is_draft = false;
         //let mut mermaid_script = (String::new(), false);
@@ -87,11 +92,15 @@ fn main() -> Result<(), Error>{
 
             // Just ingore from the 5th element foward. 
             // See StultusVisio philosophy.
-            if elements.len() < 5 {
-                match raw_result {
-                    Some(result) => elements.push(result),
-                    None => ()
-                }
+            match raw_result {
+                Some(result) => {
+                    if elements.len() < 4 {
+                        elements.push(result);
+                    } else {
+                        eprintln!("The slide no. {} had to many elements. An element of nature {} was discarded.", slide_no, result.nature)
+                    }
+                    }
+                None => ()
             }
 
             elements = elements.organize();
@@ -115,7 +124,7 @@ fn main() -> Result<(), Error>{
 
     let _ = output(render(logo_img, foot, has_mermaid, slides)?, args);
     
-    println!("Done!");
+    println!("Done!\nIf some elements was discarded by the process, see SxPress phylosophy.\n");
     
     Ok(())
 }
@@ -125,7 +134,7 @@ fn main() -> Result<(), Error>{
 //    StultusVisio is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU General Public License as published by
 //    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
+//    any later version.
 //
 //    StultusVisio is distributed in the hope that it will be useful,
 //    but WITHOUT ANY WARRANTY; without even the implied warranty of
