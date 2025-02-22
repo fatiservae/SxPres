@@ -14,6 +14,13 @@ Etc.
 .heading
 Texts and lists:
 # Even that the .heading appears last, will be rendered on the top of the slide.
+.list
+teste
+teste
+.image
+example.jpg
+.image
+example.jpg
 ---
 # This is a comment and will be ingored.
 # Those three dashes (---) starts a new slide.
