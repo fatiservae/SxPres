@@ -105,12 +105,12 @@ fn main() -> Result<(), Error>{
 
             elements = elements.organize();
             // The `elements: Vec<Element>` should suffer ordering,
-            // checking and other StultusVisio philosophy acts. 
+            // checking and other SxPres philosophy acts. 
             // e.g: if the user passes a .heading tag, it should always
             // be the first on the slide, to occupy the top. Some 
             // prohibitions are also desireble, like no more than two
             // tables per slide, a single video etc. In another words,
-            // the main characteristic of StultusVisio is to free the 
+            // the main characteristic of SxPres is to free the 
             // user from formatting.
         };
         slides.push(

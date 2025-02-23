@@ -117,7 +117,7 @@ impl fmt::Display for ElementNature {
                 Self::Image => "image",
                 Self::Mermaid => "mermaid",
                 Self::Subheading => "subheading",
-                _ => "unknown",
+                Self::Video => "video",
             }
         );
         Ok(())
@@ -150,14 +150,16 @@ impl fmt::Display for Element {
     }
 }
 
+/// Makes sure that priorities between `Elements` are respected.
 pub trait Organize {
     fn organize(self) -> Self;
 }
+
 impl Organize for Vec<Element> {
-    /// For now, organize() just separates the `headings` and the
-    /// `subheadings` in different `<div class=elementGroup>` so
-    /// that in the `CSS` configuration it can be formatted separately.
+    // organize() just makes sure that the priority order of Elements
+    // are respected.
     fn organize(mut self) -> Self {
+        // Must allow empty Slide with no Elements.
         if self.len() < 1 {
             self
         } else {
@@ -249,6 +251,10 @@ impl SplitOnTag for Vec<String> {
     }
 }
 
+/// Safely parsing tags before processing.
+///
+/// TODO: In the future, CleanTag should be capable
+/// of doing more complex tag manipulation also.
 pub trait CleanTag {
     fn clean_tag(self) -> Self;
 }
