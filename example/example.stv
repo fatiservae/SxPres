@@ -26,6 +26,8 @@ Next slide, an image and then a video...
 example.jpg
 One caption to this image:
 Line breaks are permitted!
+.image
+example.jpg
 ---
 .video
 example.mp4
