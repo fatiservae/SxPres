@@ -1,5 +1,5 @@
 // See licence at the end.
-//
+
 // By Jefferson T.
 // https://jeffersontorres.com.br
 
@@ -102,6 +102,15 @@ pub enum ElementNature {
     Video,
     Image,
     Mermaid,
+    Table,
+}
+impl ElementNature {
+    fn is_heading_or_subheading(&self) -> bool {
+        match self {
+            ElementNature::Heading | ElementNature::Subheading => true,
+            _ => false,
+        }
+    }
 }
 impl fmt::Display for ElementNature {
     #![allow(unused)]
@@ -118,6 +127,7 @@ impl fmt::Display for ElementNature {
                 Self::Mermaid => "mermaid",
                 Self::Subheading => "subheading",
                 Self::Video => "video",
+                Self::Table => "table",
             }
         );
         Ok(())
@@ -190,16 +200,99 @@ impl fmt::Display for Slide {
             true => before = "<div class=\"slide, draft-slide\">".to_string(),
         };
 
+        let mut css = String::new();
+        let mut frames = String::new();
         let mut fill = String::new();
 
-        match &self.content {
-            Ok(elements) => {
-                elements
-                    .iter()
-                    .for_each(|element| fill.push_str(&format!("{}", element.content)));
-            }
-            Err(_) => (),
+        fill = match &self.content {
+            Ok(elements) => match elements.len() {
+                // TODO: PASSAR TODOS STYLES PARA LITERAL NO CORPO DOS DIVS
+                0 => {
+                    format!("")
+                }
+                1 => {
+                    format!(
+                        "<div style=margin-top:auto;margin-bottom:auto>{}</div>",
+                        &elements[0].content
+                    )
+                }
+                2 => {
+                    if elements[0].nature.is_heading_or_subheading() {
+                        format!(
+                            "<div style=\"margin-top:auto;margin-bottom:auto;display:grid\">
+                            <div style=\"height: 30%;\">{}</div>
+                            <div style=\"height: 30%;\">{}</div>
+                            </div>",
+                            &elements[0].content, &elements[1].content
+                        )
+                    } else {
+                        format!(
+                            "<div style=\"display:inline-flex;justify-content:center;width:100%;max-height:90%;margin-top:auto;margin-bottom:auto\">
+                            <div style=\"width:100%;height:100%\">{}</div>
+                            <div class=frame>{}</div>
+                            </div>",
+                            &elements[0].content, &elements[1].content
+                        )
+                    }
+                }
+                3 => {
+                    // single three elements column
+                    if elements[2].nature.is_heading_or_subheading()
+                        | elements[1].nature.is_heading_or_subheading()
+                    {
+                        format!(
+                            "<div>
+                            <div style=\"height:29% !important;\" class=frame>{}</div>
+                            <div style=\"height:29% !important;\" class=frame>{}</div>
+                            <div style=\"height:29% !important;\" class=frame>{}</div>
+                            </div>",
+                            &elements[0].content, &elements[1].content, &elements[2].content
+                        )
+                    } else {
+                        // pyramid format
+                        format!(
+                            "<div style=\"height:49vh !important;\">
+                                <div>{}</div>
+                            </div>
+                            <div style=\"display:inline-flex;justify-content:center;width:80vw; height:49vh !important\">
+                                <div>{}</div>
+                                <div>{}</div>
+                            </div>",
+                            &elements[0].content, &elements[1].content, &elements[2].content
+                        )
+                    }
+                }
+                4 => {
+                    // square format
+                    css = format!("<style></style>");
+                    format!(
+                        "{}<div>
+                            <div>{}</div>
+                            <div>{}</div>
+                        </div>
+                        <div>
+                            <div>{}</div>
+                            <div>{}</div>
+                        </div>",
+                        css,
+                        &elements[0].content,
+                        &elements[1].content,
+                        &elements[2].content,
+                        &elements[3].content
+                    )
+                }
+                5.. => String::from("este slide ficou em branco pq passou de 4 elementos?"),
+            },
+            Err(_) => String::from("este slide deu erro?"),
         };
+        // match &self.content {
+        //     Ok(elements) => {
+        //         elements
+        //             .iter()
+        //             .for_each(|element| fill.push_str(&format!("{}", element.content)));
+        //     }
+        //     Err(_) => (),
+        // };
 
         write!(f, "{}{}</div>", before, fill);
         Ok(())
@@ -342,7 +435,10 @@ pub fn video(raw_element: Vec<String>) -> Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_VIDEO)?;
     let video_path: String = raw_element[1].clone();
     let video = file_base64(video_path, "video");
-    let vid_content = format!("<video controls src=\"{}\"></video>", video?);
+    let vid_content = format!(
+        "<div class=element><video controls src=\"{}\"></video></div>",
+        video?
+    );
     Ok(Element {
         nature: ElementNature::Video,
         content: vid_content,
@@ -365,7 +461,7 @@ pub fn table(raw_element: Vec<String>) -> Result<Element, fmt::Error> {
     }
     table += "</table></div>";
     Ok(Element {
-        nature: ElementNature::Video,
+        nature: ElementNature::Table,
         content: table,
     })
 }
@@ -394,7 +490,7 @@ pub fn image(raw_element: Vec<String>) -> Result<Element, fmt::Error> {
     is_element_ok(&raw_element, TAG_IMAGE)?;
     let image_path: String = raw_element[1].clone();
     let image = file_base64(image_path, "image");
-    let mut _content = format!("<div class=\"element\"><img src=\"{}\">", image?);
+    let mut _content = format!("<div class=\"element\"><div><img src=\"{}\">", image?);
 
     // To treat captions...
     if raw_element.len() > 2 {
@@ -403,9 +499,9 @@ pub fn image(raw_element: Vec<String>) -> Result<Element, fmt::Error> {
         for line in &raw_element[3..] {
             captions = captions + &format!("<br>{}", line);
         }
-        _content = _content + &captions + "</figcaption></img></div>";
+        _content = _content + &captions + "</figcaption></img></div></div>";
     } else {
-        _content = _content + "</img></div>";
+        _content = _content + "</img></div></div>";
     };
 
     Ok(Element {

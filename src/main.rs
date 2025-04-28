@@ -99,7 +99,7 @@ fn main() -> Result<(), Error>{
                     } else {
                         eprintln!("The slide no. {} had to many elements. An element of nature {} was discarded.", slide_no, result.nature)
                     }
-                    }
+                }
                 None => ()
             }
 

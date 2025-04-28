@@ -1,13 +1,20 @@
 body {
-  text-align: justify;
+  /* text-align: justify; */
   font-family: "Fira Sans", 'Lato', sans-serif;
   /* Importante zerar todas bordas */
-  border: 0px;
-  margin: 0px !important;
-  padding: 0px !important;
-  display: block;
-  font-size: 24px;
-} 
+  /* border: 0px; */
+  /* margin: 0px !important; */
+  /* padding: 0px !important; */
+  display: flex;
+  direction: column;
+  /* font-size: 24px; */
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
 
 #popup {
   display: block;
@@ -15,40 +22,59 @@ body {
   top: 1em;
   left: 1em;
   color: black;
-  background-color: rgba(200, 225, 255, 0.90); 
+  background-color: rgba(200, 225, 255, 0.90);
   padding: 20px;
   border: 3px solid #000;
   border-radius: 5px;
   z-index: +100;
 }
-#popup td, tr, th {
+
+#popup td,
+tr,
+th {
   text-align: left;
   padding-right: 2em;
 }
-#popup h1{
+
+#popup h1 {
   text-align: center;
 }
-#popup h2{
+
+#popup h2 {
   text-align: center;
 }
-#popup p{
+
+#popup p {
   text-align: center;
 }
 
 .element {
-  max-height: 90%;
-  display: contents;
+  display: flex;
   justify-content: center;
+  /* height: auto; */
+  /* margin-top: auto; */
+  /* margin-bottom: auto; */
+}
+
+/* .element>*>*>* { */
+/* max-height: 98%; */
+/* } */
+
+.element div {
+  display: block;
+  text-align: center;
+  /* sometimes is necessary to avoid the std flex display */
 }
 
 img {
   /*
   flex-grow: 1;
   */
-  max-width: 100%;
-  max-height: 90%;
+  max-width: 80%;
+  /* max-height: 90%; */
   border-radius: 7px;
 }
+
 figcaption {
   font-size: 65%;
   text-align: center;
@@ -58,6 +84,31 @@ figcaption {
 .draft-slide {
   display: none;
 }
+
+/* .slide { */
+/* width: 95vw; */
+/* height: 90vh; */
+/* overflow: hidden; */
+/* display: flex; */
+/* justify-content: center; */
+/* align-items: center; */
+/* } */
+
+/* .slide>* { */
+/* max-width: 100%; */
+/* max-height: 100%; */
+/* object-fit: contain; */
+/* transform: scale(1); */
+/* } */
+
+.overframe,
+.frame {
+  margin-top: auto;
+  margin-bottom: auto;
+  justify-content: center;
+  align-items: center;
+}
+
 .slide {
   /*
   width: 100vw;
@@ -65,26 +116,42 @@ figcaption {
   slide-break-before: always;
   break-after: always;
   */
-  align-items: center;
+  /* align-items: center; */
+  /* flex-direction: column; */
+  /* justify-content: center; */
+  margin: auto;
+  padding: auto;
+  display: style;
   flex-direction: column;
-  justify-content: center;
+  max-width: 90vw;
+  max-height: 80vh;
   display: flex;
-  align-items: space-between;
-  height: 95vh;
-  overflow: hidden;
+  /* justify-content: center; */
+  /* align-items: center; */
+  /* overflow: hidden; */
+  /* align-items: space-between; */
+  /* height: 95vh; */
+  /* overflow: hidden; */
 }
+
 .slide p {
+  text-align: center;
   padding: 1em;
 }
+
 .slide h1 {
   /* 
   */
 }
+
 .slide h2 {
   /* 
   */
 }
-.slide h1, h2, h3 {
+
+.slide h1,
+h2,
+h3 {
   /*
   display: grid;
   align-items: center; 
@@ -95,29 +162,35 @@ figcaption {
   padding-top: clamp(2%, 2vw, 80%);
   padding-right: 1vw;
   padding-left: 1vw;
-  max-height: 100%; 
-  overflow-y: auto; 
+  max-height: 100%;
+  overflow-y: auto;
 }
+
 .slide video {
-  width: 98vw;
-  height: 98vh;
-  object-fit: contain;
-  padding-top: 1vh;
-  padding-bottom: 1vh;
-  padding-right: 1vw;
-  padding-left: 1vw;
+  max-height: 70%;
+  max-width: 80%;
+  /* width: 98vw; */
+  /* height: 98vh; */
+  /* object-fit: contain; */
+  /* padding-top: 1vh; */
+  /* padding-bottom: 1vh; */
+  /* padding-right: 1vw; */
+  /* padding-left: 1vw; */
 }
+
 .slide th {
   background-color: gray;
   border: 1px solid;
   text-align: center;
   padding: 8px;
 }
+
 .slide td {
   border: 1px solid;
   padding: 8px;
   text-align: left;
 }
+
 .slide table {
   /*
   margin: 0 auto;
@@ -159,7 +232,7 @@ iframe {
 footer {
   position: fixed;
   font-size: 90%;
-  background-color: rgba(200, 225, 255, 0.5); 
+  background-color: rgba(200, 225, 255, 0.5);
   left: 3rem;
   bottom: 0;
   padding-right: 1em;
@@ -171,14 +244,14 @@ footer {
 }
 
 #marcador {
- position: absolute;
- width: 80px;
- height: 80px;
- border-radius: 50%;
- background-color: transparent;
- display: none; 
- border: 8px solid rgba(55, 0, 200, 1); 
- z-index: 9999; 
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: transparent;
+  display: none;
+  border: 8px solid rgba(55, 0, 200, 1);
+  z-index: 9999;
 }
 
 /* LISTAS */
@@ -190,12 +263,19 @@ footer {
   display: flex;
   max-width: 90vw;
 }
-.listas ul, 
+
+.listas ul,
 .list ol {
   font-weight: normal;
   margin-left: auto;
   margin-right: auto;
   padding-left: 10vw;
+}
+
+
+svg[id*="mermaid"] {
+  display: flex;
+  height: 90%;
 }
 
 .mermaidTooltip {
