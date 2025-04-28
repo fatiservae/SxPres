@@ -22,6 +22,8 @@ Lists can be ordered, producing numbered items.
 In this case, three!
 Next slide, an image and then a video...
 ---
+.heading
+Two imagens, they gonna be side-by-side
 .image
 example.jpg
 One caption to this image:
